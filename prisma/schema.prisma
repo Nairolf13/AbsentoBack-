@@ -1,0 +1,164 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  // output   = "../generated/prisma"
+  previewFeatures = ["prismaSchemaFolder"]
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Entreprise {
+  id               Int       @id @default(autoincrement())
+  nom              String
+  siret            String    @unique
+  secteur          String?
+  taille           String?
+  adresse          String
+  telephone        String
+  emailContact     String
+  responsableNom   String
+  responsablePrenom String
+  emailResponsable String    @unique
+  motDePasse       String
+  utilisateurs     UtilisateurEntreprise[]
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+}
+
+model Utilisateur {
+  id              Int     @id @default(autoincrement())
+  nom             String
+  prenom          String
+  email           String     @unique
+  password        String
+  telephone       String
+  dateNaissance   DateTime
+  adresse         String
+  poste           String
+  role            Role       @default(EMPLOYE)
+  entreprises     UtilisateurEntreprise[]
+  disponibilites  Disponibilite[]
+  absences        Absence[]
+  remplacements   Remplacement[] @relation("Remplacant")
+  aEteRemplace    Remplacement[] @relation("Remplace")
+  competences     Competence[] @relation("UserCompetences")
+  planning        Planning[] @relation("PlanningEmployee")
+  replacedPlanning Planning[] @relation("PlanningReplaced")
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+}
+
+model UtilisateurEntreprise {
+  utilisateurId Int
+  entrepriseId  Int
+  utilisateur   Utilisateur @relation(fields: [utilisateurId], references: [id])
+  entreprise    Entreprise  @relation(fields: [entrepriseId], references: [id])
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@id([utilisateurId, entrepriseId])
+}
+
+model Disponibilite {
+  id           Int   @id @default(autoincrement())
+  utilisateur  Utilisateur @relation(fields: [utilisateurId], references: [id])
+  utilisateurId Int
+  jour         JourSemaine
+  heureDebut   String
+  heureFin     String
+}
+
+model Absence {
+  id            Int  @id @default(autoincrement())
+  type          String   
+  reason        String?
+  status        String   @default("En attente") 
+  startDate     DateTime
+  endDate       DateTime
+  justification String?  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  employee      Utilisateur     @relation(fields: [employeeId], references: [id])
+  employeeId    Int
+
+  justificatif  Justificatif?
+  remplacement  Remplacement?
+  planning      Planning[]
+}
+
+model Justificatif {
+  id         Int   @id @default(autoincrement())
+  url        String
+  absence    Absence  @relation(fields: [absenceId], references: [id])
+  absenceId  Int   @unique
+}
+
+model Remplacement {
+  id              Int      @id @default(autoincrement())
+  absence         Absence     @relation(fields: [absenceId], references: [id])
+  absenceId       Int      @unique
+  remplacant      Utilisateur @relation("Remplacant", fields: [remplacantId], references: [id])
+  remplacantId    Int
+  remplace        Utilisateur @relation("Remplace", fields: [remplaceId], references: [id])
+  remplaceId      Int      @unique
+  validé          Boolean     @default(false)
+  dateValidation  DateTime?
+}
+
+model Competence {
+  id        Int        @id @default(autoincrement())
+  nom       String
+  users     Utilisateur[] @relation("UserCompetences")
+}
+
+model Planning {
+  id                Int      @id @default(autoincrement())
+  date              DateTime
+  moment            String   // 'AM' ou 'PM'
+  employeeId        Int
+  replaceEmployeeId Int
+  absenceId         Int
+
+  employee          Utilisateur @relation("PlanningEmployee", fields: [employeeId], references: [id])
+  replacedEmployee  Utilisateur @relation("PlanningReplaced", fields: [replaceEmployeeId], references: [id])
+  absence           Absence     @relation(fields: [absenceId], references: [id])
+}
+
+enum Role {
+  EMPLOYE
+  MANAGER
+  RH
+  ADMIN
+}
+
+enum TypeAbsence {
+  MALADIE
+  CONGE
+  RTT
+  AUTRE
+}
+
+enum StatutAbsence {
+  EN_ATTENTE
+  VALIDEE
+  REFUSEE
+}
+
+enum JourSemaine {
+  LUNDI
+  MARDI
+  MERCREDI
+  JEUDI
+  VENDREDI
+  SAMEDI
+  DIMANCHE
+}
