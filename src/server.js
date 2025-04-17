@@ -7,5 +7,5 @@ const server = http.createServer(app);
 const io = initSocket(server);
 
 server.listen(port, () => {
-  console.log(`Serveur lancé sur http://localhost:${port}`);
+  console.log(`Serveur lancé `);
 });
