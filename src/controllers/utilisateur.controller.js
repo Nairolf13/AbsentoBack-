@@ -38,7 +38,7 @@ exports.updateUtilisateur = async (req, res) => {
     if (data.dateNaissance) {
       data.dateNaissance = new Date(data.dateNaissance);
     }
-    const utilisateur = await prisma.utilisateur.update({ where: { id }, data });
+    const utilisateur = await prisma.utilisateur.update({ where: { id: parseInt(id) }, data });
     res.json({ message: 'Utilisateur modifié', utilisateur });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -49,7 +49,7 @@ exports.updateUtilisateur = async (req, res) => {
 exports.deleteUtilisateur = async (req, res) => {
   try {
     const { id } = req.params;
-    await prisma.utilisateur.delete({ where: { id } });
+    await prisma.utilisateur.delete({ where: { id: parseInt(id) } });
     res.json({ message: 'Utilisateur supprimé' });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -142,7 +142,9 @@ exports.getUsersByEntreprise = async (req, res) => {
             email: true,
             telephone: true,
             poste: true,
-            role: true
+            role: true,
+            adresse: true,
+            dateNaissance: true
           }
         },
         entreprise: {
