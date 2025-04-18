@@ -47,7 +47,7 @@ exports.declarerAbsenceEtGenererRemplacement = async (req, res) => {
       await updatePlanningWithReplacement(absence.id, remplacant);
       // 4. Notifications automatiques
       const employeeAbsent = await prisma.utilisateur.findUnique({ where: { id: employeeId } });
-      const manager = await prisma.utilisateur.findFirst({ where: { role: 'MANAGER' } });
+      const manager = await prisma.utilisateur.findFirst({ where: { role: 'ADMIN' } });
       await sendEmail(
         remplacant.email,
         'Nouveau remplacement à effectuer',
