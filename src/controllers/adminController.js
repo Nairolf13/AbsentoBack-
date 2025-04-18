@@ -60,7 +60,7 @@ exports.getFullPlanning = async (req, res) => {
 exports.getUserNotifications = async (req, res) => {
   const { userId } = req.params;
   try {
-    const notifications = await prisma.notification.findMany({ where: { userId } });
+    const notifications = await prisma.notification.findMany({ where: { userId: Number(userId) } });
     res.json(notifications);
   } catch (err) {
     res.status(500).json({ error: 'Erreur récupération notifications' });
@@ -143,5 +143,15 @@ exports.createOrUpdateEmploye = async (req, res) => {
   } catch (err) {
     console.error('Erreur création/modification employé:', err);
     res.status(500).json({ error: err.message });
+  }
+};
+
+exports.deleteNotification = async (req, res) => {
+  const { id } = req.params;
+  try {
+    await prisma.notification.delete({ where: { id: Number(id) } });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Erreur suppression notification' });
   }
 };

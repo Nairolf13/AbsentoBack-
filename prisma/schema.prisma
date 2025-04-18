@@ -54,6 +54,7 @@ model Utilisateur {
   replacedPlanning Planning[] @relation("PlanningReplaced")
   passwordToken         String?
   passwordTokenExpires  DateTime?
+  notifications   Notification[]
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
 
@@ -166,4 +167,13 @@ enum JourSemaine {
   VENDREDI
   SAMEDI
   DIMANCHE
+}
+
+model Notification {
+  id      Int         @id @default(autoincrement())
+  userId  Int
+  user    Utilisateur @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message String
+  date    DateTime    @default(now())
+  lu      Boolean     @default(false)
 }

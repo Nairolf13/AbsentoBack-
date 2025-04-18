@@ -14,6 +14,7 @@ router.get('/planning', verifyToken, adminController.getFullPlanning);
 
 // Notifications
 router.get('/notifications/:userId', verifyToken, adminController.getUserNotifications);
+router.delete('/notifications/:id', verifyToken, adminController.deleteNotification);
 
 // Création ou mise à jour d’un planning
 router.post('/planning', verifyToken, adminController.createOrUpdatePlanning);

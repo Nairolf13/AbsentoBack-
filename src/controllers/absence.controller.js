@@ -4,6 +4,8 @@ const { proposerRemplacant } = require('../services/remplacementService');
 const { updatePlanningWithReplacement } = require('../services/planningService');
 const path = require('path');
 const { sendEmail } = require('../utils/mailer');
+const { sendNotificationToUser } = require('../services/websocket');
+const { getIo } = require('../utils/socket');
 
 exports.declarerAbsenceEtGenererRemplacement = async (req, res) => {
     console.log('BODY DECLARATION:', req.body);
@@ -33,6 +35,23 @@ exports.declarerAbsenceEtGenererRemplacement = async (req, res) => {
           endDate,
         },
       });
+      // Notifier tous les admins à la déclaration d'absence
+      const admins = await prisma.utilisateur.findMany({ where: { role: 'ADMIN' } });
+      for (const admin of admins) {
+        sendNotificationToUser(admin.id.toString(), `Nouvelle absence déclarée par ${req.user.prenom} ${req.user.nom} le ${date}.`);
+        getIo().to(`user_${admin.id}`).emit('notification', {
+          message: `Nouvelle absence déclarée par ${req.user.prenom} ${req.user.nom} le ${date}.`,
+          date: new Date(),
+        });
+        await prisma.notification.create({
+          data: {
+            userId: admin.id,
+            message: `Nouvelle absence déclarée par ${req.user.prenom} ${req.user.nom} le ${date}.`,
+            date: new Date(),
+            lu: false
+          }
+        });
+      }
       // 2. Recherche d'un remplaçant
       let remplacant = null;
       try {
@@ -45,8 +64,55 @@ exports.declarerAbsenceEtGenererRemplacement = async (req, res) => {
       }
       // 3. Mise à jour automatique du planning
       await updatePlanningWithReplacement(absence.id, remplacant);
+      // Notifier le remplaçant
+      sendNotificationToUser(remplacant.id.toString(), `Vous avez été désigné comme remplaçant de ${req.user.prenom} ${req.user.nom} le ${date}.`);
+      getIo().to(`user_${remplacant.id}`).emit('notification', {
+        message: `Vous avez été désigné comme remplaçant de ${req.user.prenom} ${req.user.nom} le ${date}.`,
+        date: new Date(),
+      });
+      await prisma.notification.create({
+        data: {
+          userId: remplacant.id,
+          message: `Vous avez été désigné comme remplaçant de ${req.user.prenom} ${req.user.nom} le ${date}.`,
+          date: new Date(),
+          lu: false
+        }
+      });
+      // Notifier l'employé absent
+      const employeeAbsent = await prisma.utilisateur.findUnique({ where: { id: Number(employeeId) } });
+      console.log('employeeAbsent:', employeeAbsent);
+      sendNotificationToUser(employeeAbsent.id.toString(), `Votre absence du ${date} a été prise en compte et un remplaçant a été affecté.`);
+      getIo().to(`user_${employeeAbsent.id}`).emit('notification', {
+        message: `Votre absence du ${date} a été prise en compte et un remplaçant a été affecté.`,
+        date: new Date(),
+      });
+      await prisma.notification.create({
+        data: {
+          userId: employeeAbsent.id,
+          message: `Votre absence du ${date} a été prise en compte et un remplaçant a été affecté.`,
+          date: new Date(),
+          lu: false
+        }
+      });
+      // Notifier tous les admins du remplacement
+      const absentNom = employeeAbsent?.nom || '(nom inconnu)';
+      const absentPrenom = employeeAbsent?.prenom || '(prénom inconnu)';
+      for (const admin of admins) {
+        sendNotificationToUser(admin.id.toString(), `${remplacant.prenom} ${remplacant.nom} a été affecté en remplacement de ${absentPrenom} ${absentNom} pour le ${date}.`);
+        getIo().to(`user_${admin.id}`).emit('notification', {
+          message: `${remplacant.prenom} ${remplacant.nom} a été affecté en remplacement de ${absentPrenom} ${absentNom} pour le ${date}.`,
+          date: new Date(),
+        });
+        await prisma.notification.create({
+          data: {
+            userId: admin.id,
+            message: `${remplacant.prenom} ${remplacant.nom} a été affecté en remplacement de ${absentPrenom} ${absentNom} pour le ${date}.`,
+            date: new Date(),
+            lu: false
+          }
+        });
+      }
       // 4. Notifications automatiques
-      const employeeAbsent = await prisma.utilisateur.findUnique({ where: { id: employeeId } });
       const manager = await prisma.utilisateur.findFirst({ where: { role: 'ADMIN' } });
       await sendEmail(
         remplacant.email,
