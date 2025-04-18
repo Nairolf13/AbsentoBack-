@@ -1,20 +1,22 @@
 const router = require('express').Router()
-const userController = require('../controllers/user.controller');
+const utilisateurController = require('../controllers/utilisateur.controller');
 const { verifyToken } = require('../middlewares/auth.middleware')
 
 // Création utilisateur
-router.post('/', verifyToken, userController.createUser)
+router.post('/', verifyToken, utilisateurController.createUtilisateur)
 // Récupérer tous les utilisateurs
-router.get('/', verifyToken, userController.getAllUsers)
+router.get('/', verifyToken, utilisateurController.getAllUsers)
 // Récupérer un utilisateur par id
-router.get('/:id', verifyToken, userController.getUserById)
+router.get('/:id', verifyToken, utilisateurController.getUserById)
 // Modifier un utilisateur
-router.put('/:id', verifyToken, userController.updateUser)
+router.put('/:id', verifyToken, utilisateurController.updateUtilisateur)
 // Supprimer un utilisateur
-router.delete('/:id', verifyToken, userController.deleteUser)
+router.delete('/:id', verifyToken, utilisateurController.deleteUtilisateur)
 // Modifier le rôle d'un utilisateur
-router.patch('/role/:userId', verifyToken, userController.modifierRole)
+router.patch('/role/:userId', verifyToken, utilisateurController.modifierRole)
 // Modifier le planning d'un utilisateur
-router.patch('/planning/:userId', verifyToken, userController.modifierPlanning)
+router.patch('/planning/:userId', verifyToken, utilisateurController.modifierPlanning)
+// Récupérer tous les employés d'une entreprise
+router.get('/entreprise', verifyToken, utilisateurController.getUsersByEntreprise)
 
 module.exports = router

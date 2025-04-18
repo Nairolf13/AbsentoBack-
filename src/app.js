@@ -20,6 +20,8 @@ const entrepriseRoutes = require('./routes/entreprise.routes')
 const absenceRoutes = require('./routes/absence.routes')
 const remplacementRoutes = require('./routes/remplacement.routes')
 const statsRoutes = require('./routes/stats.routes')
+const passwordRoutes = require('./routes/password.routes')
+const adminRoutes = require('./routes/adminRoutes')
 
 app.use('/api/auth', authRoutes)
 app.use('/api/users', userRoutes)
@@ -27,9 +29,7 @@ app.use('/api/entreprises', entrepriseRoutes)
 app.use('/api/absences', absenceRoutes)
 app.use('/api/remplacements', remplacementRoutes)
 app.use('/api/stats', statsRoutes)
-
-const PORT = process.env.PORT || 5000;
-const server = app.listen(PORT, () => console.log(`Serveur démarré sur le port ${PORT}`));
-require('./services/websocket').initWebSocket(server);
+app.use('/api/password', passwordRoutes)
+app.use('/api/admin', adminRoutes)
 
 module.exports = app

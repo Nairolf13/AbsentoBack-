@@ -1,4 +1,5 @@
-const prisma = require('../../prisma/client');
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 const bcrypt = require('bcrypt');
 const csv = require('csv-parser');
 const fs = require('fs');
@@ -59,7 +60,7 @@ exports.deleteUtilisateur = async (req, res) => {
 exports.getUtilisateur = async (req, res) => {
   try {
     const { id } = req.params;
-    const utilisateur = await prisma.utilisateur.findUnique({ where: { id } });
+    const utilisateur = await prisma.utilisateur.findUnique({ where: { id: parseInt(id) } });
     if (!utilisateur) return res.status(404).json({ error: 'Not found' });
     res.json(utilisateur);
   } catch (err) {
@@ -71,4 +72,85 @@ exports.getUtilisateur = async (req, res) => {
 exports.importCSV = async (req, res) => {
   // À compléter selon la méthode d'upload (multer, etc.)
   res.status(501).json({ error: 'Import CSV non implémenté ici' });
+};
+
+// Récupérer tous les utilisateurs
+exports.getAllUsers = async (req, res) => {
+  try {
+    const users = await prisma.utilisateur.findMany();
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur récupération utilisateurs', error });
+  }
+};
+
+// Récupérer un utilisateur par ID (alias de getUtilisateur)
+exports.getUserById = async (req, res) => {
+  try {
+    const user = await prisma.utilisateur.findUnique({ where: { id: parseInt(req.params.id) } });
+    if (!user) return res.status(404).json({ message: 'Utilisateur non trouvé' });
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur récupération utilisateur', error });
+  }
+};
+
+// Modifier le rôle d'un utilisateur
+exports.modifierRole = async (req, res) => {
+  const { userId } = req.params;
+  const { role } = req.body;
+  try {
+    const updatedUser = await prisma.utilisateur.update({
+      where: { id: parseInt(userId) },
+      data: { role }
+    });
+    res.json(updatedUser);
+  } catch (error) {
+    res.status(500).json({ error: "Erreur lors de la modification du rôle." });
+  }
+};
+
+// Modifier le planning d'un utilisateur
+exports.modifierPlanning = async (req, res) => {
+  const { userId } = req.params;
+  const { joursTravailles, horaires } = req.body;
+  try {
+    const updatedUser = await prisma.utilisateur.update({
+      where: { id: parseInt(userId) },
+      data: { joursTravailles, horaires }
+    });
+    res.json(updatedUser);
+  } catch (error) {
+    res.status(500).json({ error: "Erreur lors de la mise à jour du planning." });
+  }
+};
+
+// Récupérer tous les employés d'une entreprise
+exports.getUsersByEntreprise = async (req, res) => {
+  try {
+    const entrepriseId = req.user.entrepriseId;
+    if (!entrepriseId) return res.status(400).json({ message: "Entreprise non trouvée pour l'utilisateur connecté." });
+    const links = await prisma.utilisateurEntreprise.findMany({
+      where: { entrepriseId: entrepriseId }
+    });
+    const userIds = links.map(link => link.utilisateurId);
+    let users = [];
+    if (userIds.length > 0) {
+      users = await prisma.utilisateur.findMany({
+        where: { id: { in: userIds } },
+        select: {
+          id: true,
+          nom: true,
+          prenom: true,
+          email: true,
+          telephone: true,
+          poste: true,
+          role: true
+        }
+      });
+    }
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ message: "Erreur récupération utilisateur", error });
+  }
 };

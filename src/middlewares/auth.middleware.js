@@ -1,15 +1,21 @@
 const jwt = require('jsonwebtoken')
 
 exports.verifyToken = (req, res, next) => {
-  console.log('verifyToken middleware called');
-  const token = req.headers['authorization']?.split(' ')[1]
+  console.log('--- [verifyToken] ---');
   console.log('Authorization header:', req.headers['authorization']);
-  if (!token) return res.status(403).send({ message: 'Token manquant.' })
+  const token = req.headers['authorization']?.split(' ')[1];
+  if (!token) {
+    console.log('Token manquant.');
+    return res.status(403).send({ message: 'Token manquant.' });
+  }
 
   jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-    if (err) return res.status(401).send({ message: 'Token invalide.' })
-    console.log('verifyToken decoded:', decoded);
+    if (err) {
+      console.log('Token invalide:', err);
+      return res.status(401).send({ message: 'Token invalide.' });
+    }
+    console.log('Token décodé:', decoded);
     req.user = decoded;
-    next()
-  })
+    next();
+  });
 }

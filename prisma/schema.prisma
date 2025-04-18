@@ -52,6 +52,8 @@ model Utilisateur {
   competences     Competence[] @relation("UserCompetences")
   planning        Planning[] @relation("PlanningEmployee")
   replacedPlanning Planning[] @relation("PlanningReplaced")
+  passwordToken         String?
+  passwordTokenExpires  DateTime?
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
 }

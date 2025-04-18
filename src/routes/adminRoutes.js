@@ -1,23 +1,24 @@
 const express = require('express');
 const router = express.Router();
 const adminController = require('../controllers/adminController');
+const { verifyToken } = require('../middlewares/auth.middleware');
 
 // Absences
-router.get('/absences', adminController.getAllAbsences);
+router.get('/absences', verifyToken, adminController.getAllAbsences);
 
 // Employés
-router.get('/employes', adminController.getAllEmployes);
+router.get('/employes', verifyToken, adminController.getAllEmployes);
 
 // Planning
-router.get('/planning', adminController.getFullPlanning);
+router.get('/planning', verifyToken, adminController.getFullPlanning);
 
 // Notifications
-router.get('/notifications/:userId', adminController.getUserNotifications);
+router.get('/notifications/:userId', verifyToken, adminController.getUserNotifications);
 
 // Création ou mise à jour d’un planning
-router.post('/planning', adminController.createOrUpdatePlanning);
+router.post('/planning', verifyToken, adminController.createOrUpdatePlanning);
 
 // Création ou modification d’un employé
-router.post('/employe', adminController.createOrUpdateEmploye);
+router.post('/employe', verifyToken, adminController.createOrUpdateEmploye);
 
 module.exports = router;

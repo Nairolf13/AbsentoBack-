@@ -26,4 +26,20 @@ async function sendEmail(to, subject, htmlContent) {
   }
 }
 
-module.exports = { sendEmail };
+// Envoi d'un mail d'invitation à la création de mot de passe
+async function sendInvitationEmail(user, token) {
+  const link = `https://ton-domaine.com/creer-mot-de-passe?token=${token}`;
+  const subject = "Création de votre compte Absento";
+  const htmlContent = `
+    <p>Bonjour ${user.prenom} ${user.nom},</p>
+    <p>Un compte vient d’être créé pour vous sur Absento.</p>
+    <p>Pour activer votre compte et choisir votre mot de passe, cliquez sur ce lien :<br/>
+    <a href="${link}">${link}</a></p>
+    <p>Ce lien est valable 24h.</p>
+    <p>Si vous n’êtes pas à l’origine de cette demande, ignorez ce message.</p>
+    <p>Cordialement,<br/>L’équipe Absento</p>
+  `;
+  await sendEmail(user.email, subject, htmlContent);
+}
+
+module.exports = { sendEmail, sendInvitationEmail };

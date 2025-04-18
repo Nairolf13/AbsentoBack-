@@ -34,7 +34,10 @@ exports.login = async (req, res) => {
   if (!user) {
     return res.status(401).json({ error: 'Utilisateur non trouvé pour cet email.' });
   }
-  const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET);
+  // Récupérer l'entrepriseId via la table de jointure
+  const lien = await prisma.utilisateurEntreprise.findFirst({ where: { utilisateurId: user.id } });
+  const entrepriseId = lien ? lien.entrepriseId : null;
+  const token = jwt.sign({ id: user.id, role: user.role, entrepriseId }, process.env.JWT_SECRET);
   res.json({ token });
 };
 
