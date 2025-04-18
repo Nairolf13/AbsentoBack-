@@ -4,10 +4,13 @@ const crypto = require('crypto');
 const bcrypt = require('bcrypt');
 const { sendInvitationEmail } = require('../utils/mailer');
 
-// Créer un utilisateur et envoyer le mail d'invitation
+// Créer un ou plusieurs utilisateurs et envoyer le mail d'invitation
 exports.inviteUser = async (req, res) => {
   try {
-    const { nom, prenom, email, telephone, dateNaissance, adresse, poste, role } = req.body;
+    let users = req.body;
+    if (!Array.isArray(users)) {
+      users = [users];
+    }
     // Récupérer l'ID de l'utilisateur connecté (admin)
     const adminId = req.user.id;
     // Récupérer l'entreprise liée à cet admin
@@ -19,30 +22,53 @@ exports.inviteUser = async (req, res) => {
     if (!entrepriseId) {
       return res.status(400).json({ message: "Impossible de déterminer l'entreprise de l'admin." });
     }
-    // Générer un mot de passe aléatoire sécurisé
-    const randomPassword = crypto.randomBytes(16).toString('base64');
-    // Hasher le mot de passe aléatoire
-    const hashedPassword = await bcrypt.hash(randomPassword, 10);
-    // Générer un token unique
-    const token = crypto.randomBytes(32).toString('hex');
-    const expires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h
-    const user = await prisma.utilisateur.create({
-      data: {
-        nom, prenom, email, telephone, dateNaissance: new Date(dateNaissance), adresse, poste, role,
-        password: hashedPassword,
-        passwordToken: token,
-        passwordTokenExpires: expires
+    const created = [];
+    const ignored = [];
+    const invalid = [];
+    for (const u of users) {
+      const { nom, prenom, email, telephone, dateNaissance, adresse, poste, role } = u;
+      // Validation des champs requis et de la date
+      if (!nom || !prenom || !email || !telephone || !dateNaissance || !adresse || !poste || !role) {
+        invalid.push(email || "(email manquant)");
+        continue;
       }
-    });
-    // Création de la relation utilisateur-entreprise
-    await prisma.utilisateurEntreprise.create({
-      data: {
-        utilisateurId: user.id,
-        entrepriseId: entrepriseId,
+      const dateObj = new Date(dateNaissance);
+      if (isNaN(dateObj.getTime())) {
+        invalid.push(email || "(email manquant)");
+        continue;
       }
-    });
-    await sendInvitationEmail(user, token);
-    res.status(201).json({ message: "Utilisateur créé, rattaché à l'entreprise de l'admin et invitation envoyée." });
+      // Vérifier si l'utilisateur existe déjà
+      const existing = await prisma.utilisateur.findUnique({ where: { email } });
+      if (existing) {
+        ignored.push(email);
+        continue;
+      }
+      // Générer un mot de passe aléatoire sécurisé
+      const randomPassword = crypto.randomBytes(16).toString('base64');
+      // Hasher le mot de passe aléatoire
+      const hashedPassword = await bcrypt.hash(randomPassword, 10);
+      // Générer un token unique
+      const token = crypto.randomBytes(32).toString('hex');
+      const expires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h
+      const user = await prisma.utilisateur.create({
+        data: {
+          nom, prenom, email, telephone, dateNaissance: dateObj, adresse, poste, role,
+          password: hashedPassword,
+          passwordToken: token,
+          passwordTokenExpires: expires
+        }
+      });
+      // Création de la relation utilisateur-entreprise
+      await prisma.utilisateurEntreprise.create({
+        data: {
+          utilisateurId: user.id,
+          entrepriseId: entrepriseId,
+        }
+      });
+      await sendInvitationEmail(user, token);
+      created.push(email);
+    }
+    res.status(201).json({ message: "Invitation terminée.", created, ignored, invalid });
   } catch (e) {
     res.status(500).json({ message: "Erreur lors de la création/invitation", error: e.message });
   }

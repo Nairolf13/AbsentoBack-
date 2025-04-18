@@ -56,22 +56,25 @@ model Utilisateur {
   passwordTokenExpires  DateTime?
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
+
+  @@map("Utilisateur")
 }
 
 model UtilisateurEntreprise {
   utilisateurId Int
   entrepriseId  Int
-  utilisateur   Utilisateur @relation(fields: [utilisateurId], references: [id])
-  entreprise    Entreprise  @relation(fields: [entrepriseId], references: [id])
+  utilisateur   Utilisateur @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
+  entreprise    Entreprise  @relation(fields: [entrepriseId], references: [id], onDelete: Cascade)
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
   @@id([utilisateurId, entrepriseId])
+  @@map("UtilisateurEntreprise")
 }
 
 model Disponibilite {
   id           Int   @id @default(autoincrement())
-  utilisateur  Utilisateur @relation(fields: [utilisateurId], references: [id])
+  utilisateur  Utilisateur @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
   utilisateurId Int
   jour         JourSemaine
   heureDebut   String
@@ -89,7 +92,7 @@ model Absence {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  employee      Utilisateur     @relation(fields: [employeeId], references: [id])
+  employee      Utilisateur     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   employeeId    Int
 
   justificatif  Justificatif?
@@ -108,9 +111,9 @@ model Remplacement {
   id              Int      @id @default(autoincrement())
   absence         Absence     @relation(fields: [absenceId], references: [id])
   absenceId       Int      @unique
-  remplacant      Utilisateur @relation("Remplacant", fields: [remplacantId], references: [id])
+  remplacant      Utilisateur @relation("Remplacant", fields: [remplacantId], references: [id], onDelete: Cascade)
   remplacantId    Int
-  remplace        Utilisateur @relation("Remplace", fields: [remplaceId], references: [id])
+  remplace        Utilisateur @relation("Remplace", fields: [remplaceId], references: [id], onDelete: Cascade)
   remplaceId      Int      @unique
   validé          Boolean     @default(false)
   dateValidation  DateTime?
@@ -130,8 +133,8 @@ model Planning {
   replaceEmployeeId Int
   absenceId         Int
 
-  employee          Utilisateur @relation("PlanningEmployee", fields: [employeeId], references: [id])
-  replacedEmployee  Utilisateur @relation("PlanningReplaced", fields: [replaceEmployeeId], references: [id])
+  employee          Utilisateur @relation("PlanningEmployee", fields: [employeeId], references: [id], onDelete: Cascade)
+  replacedEmployee  Utilisateur @relation("PlanningReplaced", fields: [replaceEmployeeId], references: [id], onDelete: Cascade)
   absence           Absence     @relation(fields: [absenceId], references: [id])
 }
 
