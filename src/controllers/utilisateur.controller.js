@@ -130,27 +130,37 @@ exports.getUsersByEntreprise = async (req, res) => {
   try {
     const entrepriseId = req.user.entrepriseId;
     if (!entrepriseId) return res.status(400).json({ message: "Entreprise non trouvée pour l'utilisateur connecté." });
+    // Récupère les liens utilisateurs-entreprise avec les infos utilisateur et entreprise
     const links = await prisma.utilisateurEntreprise.findMany({
-      where: { entrepriseId: entrepriseId }
-    });
-    const userIds = links.map(link => link.utilisateurId);
-    let users = [];
-    if (userIds.length > 0) {
-      users = await prisma.utilisateur.findMany({
-        where: { id: { in: userIds } },
-        select: {
-          id: true,
-          nom: true,
-          prenom: true,
-          email: true,
-          telephone: true,
-          poste: true,
-          role: true
+      where: { entrepriseId: entrepriseId },
+      include: {
+        utilisateur: {
+          select: {
+            id: true,
+            nom: true,
+            prenom: true,
+            email: true,
+            telephone: true,
+            poste: true,
+            role: true
+          }
+        },
+        entreprise: {
+          select: {
+            id: true,
+            nom: true
+          }
         }
-      });
-    }
+      }
+    });
+    // Formate la réponse pour chaque employé
+    const users = links.map(link => ({
+      ...link.utilisateur,
+      entreprise: link.entreprise
+    }));
     res.json(users);
   } catch (error) {
+    console.error('Erreur récupération utilisateur:', error);
     res.status(500).json({ message: "Erreur récupération utilisateur", error });
   }
 };
