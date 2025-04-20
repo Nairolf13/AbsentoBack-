@@ -27,6 +27,9 @@ router.get('/mes-remplacements', verifyToken, absenceController.getMyRemplacemen
 // Récupérer toutes les absences (RH/admin)
 router.get('/toutes', verifyToken, absenceController.getAllAbsences);
 
+// Absences sans remplaçant (pour RH/manager/admin)
+router.get('/sans-remplacant', verifyToken, absenceController.getAbsencesSansRemplacant);
+
 router.patch('/valider/:absenceId', verifyToken, (req, res, next) => {
   if (!req.body) req.body = {};
   req.body.status = "Validée";

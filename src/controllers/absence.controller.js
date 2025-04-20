@@ -21,6 +21,14 @@ exports.declarerAbsenceEtGenererRemplacement = async (req, res) => {
         console.log('REQUETE INVALIDE, BODY RECU:', req.body);
         return res.status(400).json({ message: 'Champs obligatoires manquants.', body: req.body });
       }
+      // Sécurité : empêcher la déclaration d'une absence dans le passé
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // On ne garde que la date
+      const absenceDate = new Date(date);
+      absenceDate.setHours(0, 0, 0, 0);
+      if (absenceDate < today) {
+        return res.status(400).json({ message: "Impossible de déclarer une absence dans le passé." });
+      }
       // Fusionne date et heure pour startDate et endDate
       const startDate = new Date(`${date}T${heureDebut}`);
       const endDate = new Date(`${date}T${heureFin}`);
@@ -35,17 +43,22 @@ exports.declarerAbsenceEtGenererRemplacement = async (req, res) => {
           endDate,
         },
       });
-      // Notifier tous les admins à la déclaration d'absence
-      const admins = await prisma.utilisateur.findMany({ where: { role: 'ADMIN' } });
-      for (const admin of admins) {
-        sendNotificationToUser(admin.id.toString(), `Nouvelle absence déclarée par ${req.user.prenom} ${req.user.nom} le ${date}.`);
-        getIo().to(`user_${admin.id}`).emit('notification', {
+      // Notifier tous les managers, RH et admins à la déclaration d'absence
+      const destinataires = await prisma.utilisateur.findMany({
+        where: {
+          role: { in: ['ADMIN', 'RH', 'MANAGER'] },
+          entreprises: { some: { entrepriseId: req.user.entrepriseId } }
+        }
+      });
+      for (const destinataire of destinataires) {
+        sendNotificationToUser(destinataire.id.toString(), `Nouvelle absence déclarée par ${req.user.prenom} ${req.user.nom} le ${date}.`);
+        getIo().to(`user_${destinataire.id}`).emit('notification', {
           message: `Nouvelle absence déclarée par ${req.user.prenom} ${req.user.nom} le ${date}.`,
           date: new Date(),
         });
         await prisma.notification.create({
           data: {
-            userId: admin.id,
+            userId: destinataire.id,
             message: `Nouvelle absence déclarée par ${req.user.prenom} ${req.user.nom} le ${date}.`,
             date: new Date(),
             lu: false
@@ -97,15 +110,15 @@ exports.declarerAbsenceEtGenererRemplacement = async (req, res) => {
       // Notifier tous les admins du remplacement
       const absentNom = employeeAbsent?.nom || '(nom inconnu)';
       const absentPrenom = employeeAbsent?.prenom || '(prénom inconnu)';
-      for (const admin of admins) {
-        sendNotificationToUser(admin.id.toString(), `${remplacant.prenom} ${remplacant.nom} a été affecté en remplacement de ${absentPrenom} ${absentNom} pour le ${date}.`);
-        getIo().to(`user_${admin.id}`).emit('notification', {
+      for (const destinataire of destinataires) {
+        sendNotificationToUser(destinataire.id.toString(), `${remplacant.prenom} ${remplacant.nom} a été affecté en remplacement de ${absentPrenom} ${absentNom} pour le ${date}.`);
+        getIo().to(`user_${destinataire.id}`).emit('notification', {
           message: `${remplacant.prenom} ${remplacant.nom} a été affecté en remplacement de ${absentPrenom} ${absentNom} pour le ${date}.`,
           date: new Date(),
         });
         await prisma.notification.create({
           data: {
-            userId: admin.id,
+            userId: destinataire.id,
             message: `${remplacant.prenom} ${remplacant.nom} a été affecté en remplacement de ${absentPrenom} ${absentNom} pour le ${date}.`,
             date: new Date(),
             lu: false
@@ -117,7 +130,7 @@ exports.declarerAbsenceEtGenererRemplacement = async (req, res) => {
       await sendEmail(
         remplacant.email,
         'Nouveau remplacement à effectuer',
-        `<p>Bonjour ${remplacant.prenom},<br>Vous avez été affecté en remplacement de ${employeeAbsent.prenom} le ${date} de ${heureDebut} à ${heureFin}.</p>`
+        `<p>Bonjour ${remplacant.prenom},<br>Vous avez été affecté en remplacement de ${req.user.prenom} ${req.user.nom} le ${date} de ${heureDebut} à ${heureFin}.</p>`
       );
       await sendEmail(
         manager.email,
@@ -181,40 +194,40 @@ exports.getMyAbsences = async (req, res) => {
       where: { employeeId: req.user.id },
       orderBy: { startDate: 'desc' },
       include: {
+        employee: true,
         remplacement: {
           include: {
-            remplacant: true
+            remplacant: true,
+            remplace: true
           }
         }
       }
     });
-    // Ajout du statut de remplacement pour chaque absence
-    const absencesWithRemplacementStatus = absences.map(a => {
-      let remplacementStatus = "Aucun";
-      if (a.remplacement) {
-        remplacementStatus = a.remplacement.validé ? "Validé" : "En cours";
-      }
-      return {
-        ...a,
-        remplacementStatus,
-        remplacant: a.remplacement ? a.remplacement.remplacant : null
-      };
-    });
-    res.json(absencesWithRemplacementStatus);
-  } catch (err) {
-    res.status(500).json({ error: "Erreur de récupération." });
+    res.json(absences);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Erreur lors de la récupération des absences' });
   }
 };
 
 exports.getAllAbsences = async (req, res) => {
   try {
     const absences = await prisma.absence.findMany({
-      include: { employee: true },
-      orderBy: { startDate: 'desc' }
+      orderBy: { startDate: 'desc' },
+      include: {
+        employee: true,
+        remplacement: {
+          include: {
+            remplacant: true,
+            remplace: true
+          }
+        }
+      }
     });
     res.json(absences);
-  } catch (err) {
-    res.status(500).json({ error: "Erreur de récupération." });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Erreur lors de la récupération de toutes les absences' });
   }
 };
 
@@ -273,5 +286,25 @@ exports.getMyRemplacements = async (req, res) => {
   } catch (error) {
     console.error('Erreur getMyRemplacements:', error);
     res.status(500).json({ error: 'Erreur lors de la récupération des remplacements.' });
+  }
+};
+
+exports.getAbsencesSansRemplacant = async (req, res) => {
+  try {
+    // Nouvelle logique : on récupère toutes les absences qui n'ont pas de remplacement associé
+    const absences = await prisma.absence.findMany({
+      where: {
+        remplacement: null,
+      },
+      include: {
+        employee: true, // <-- le bon nom du champ relation
+        remplacement: true,
+      },
+      orderBy: { startDate: 'desc' }
+    });
+    res.json(absences);
+  } catch (err) {
+    console.error('Erreur getAbsencesSansRemplacant:', err);
+    res.status(500).json({ error: 'Erreur récupération absences sans remplaçant', details: err.message });
   }
 };

@@ -28,14 +28,25 @@ async function updatePlanningWithReplacement(absenceId, remplaçant) {
     const updates = [];
 
     for (const jour of jours) {
-      const update = await prisma.planning.create({
-        data: {
-          date: jour.date,
+      const update = await prisma.planning.upsert({
+        where: {
+          employeeId_date: {
+            employeeId: Number(remplaçant.id),
+            date: jour.date,
+          }
+        },
+        update: {
           moment: jour.moment,
-          employeeId: remplaçant.id,
           replaceEmployeeId: absence.employeeId,
           absenceId: absence.id,
         },
+        create: {
+          date: jour.date,
+          moment: jour.moment,
+          employeeId: Number(remplaçant.id),
+          replaceEmployeeId: absence.employeeId,
+          absenceId: absence.id,
+        }
       });
       updates.push(update);
     }
