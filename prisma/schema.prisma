@@ -55,6 +55,7 @@ model Utilisateur {
   passwordToken         String?
   passwordTokenExpires  DateTime?
   notifications   Notification[]
+  tasks           Task[]
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
 
@@ -137,6 +138,16 @@ model Planning {
   employee          Utilisateur @relation("PlanningEmployee", fields: [employeeId], references: [id], onDelete: Cascade)
   replacedEmployee  Utilisateur @relation("PlanningReplaced", fields: [replaceEmployeeId], references: [id], onDelete: Cascade)
   absence           Absence     @relation(fields: [absenceId], references: [id])
+}
+
+model Task {
+  id        Int      @id @default(autoincrement())
+  title     String
+  completed Boolean  @default(false)
+  user      Utilisateur @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 enum Role {

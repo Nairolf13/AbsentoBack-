@@ -1,9 +1,8 @@
-// utils/mailer.js
 
 const nodemailer = require('nodemailer');
 
 const transporter = nodemailer.createTransport({
-  service: 'gmail', // ou ton service mail (Mailjet, SendGrid, etc.)
+  service: 'gmail', 
   auth: {
     user: process.env.MAIL_USER,
     pass: process.env.MAIL_PASS,
@@ -12,7 +11,7 @@ const transporter = nodemailer.createTransport({
 
 async function sendEmail(to, subject, htmlContent) {
   const mailOptions = {
-    from: `"Absento" <${process.env.MAIL_USER}>`,
+    from: `Absento <${process.env.MAIL_USER}>`,
     to,
     subject,
     html: htmlContent,
@@ -26,9 +25,8 @@ async function sendEmail(to, subject, htmlContent) {
   }
 }
 
-// Envoi d'un mail d'invitation à la création de mot de passe
 async function sendInvitationEmail(user, token) {
-  const link = `https://ton-domaine.com/creer-mot-de-passe?token=${token}`;
+  const link = `http://localhost:5173/creer-mot-de-passe?token=${token}`;
   const subject = "Création de votre compte Absento";
   const htmlContent = `
     <p>Bonjour ${user.prenom} ${user.nom},</p>

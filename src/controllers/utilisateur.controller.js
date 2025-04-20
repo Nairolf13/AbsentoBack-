@@ -10,7 +10,7 @@ exports.createUtilisateur = async (req, res) => {
     const { nom, prenom, email, motDePasse, telephone, dateNaissance, adresse, poste, role, entrepriseId } = req.body;
     const hashed = await bcrypt.hash(motDePasse, 10);
     const utilisateur = await prisma.utilisateur.create({
-      data: { nom, prenom, email, motDePasse: hashed, telephone, dateNaissance: new Date(dateNaissance), adresse, poste, role }
+      data: { nom, prenom, email, password: hashed, telephone, dateNaissance: new Date(dateNaissance), adresse, poste, role }
     });
     // Lier l'utilisateur à l'entreprise si entrepriseId fourni
     if (entrepriseId) {
@@ -33,7 +33,8 @@ exports.updateUtilisateur = async (req, res) => {
     const { id } = req.params;
     const data = req.body;
     if (data.motDePasse) {
-      data.motDePasse = await bcrypt.hash(data.motDePasse, 10);
+      data.password = await bcrypt.hash(data.motDePasse, 10);
+      delete data.motDePasse;
     }
     if (data.dateNaissance) {
       data.dateNaissance = new Date(data.dateNaissance);

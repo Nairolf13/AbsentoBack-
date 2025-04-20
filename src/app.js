@@ -23,6 +23,7 @@ const statsRoutes = require('./routes/stats.routes')
 const passwordRoutes = require('./routes/password.routes')
 const adminRoutes = require('./routes/adminRoutes')
 const utilisateurRoutes = require('./routes/utilisateur.routes')
+const taskRoutes = require('./routes/task.routes')
 
 app.use('/api/auth', authRoutes)
 app.use('/api/users', userRoutes)
@@ -33,5 +34,6 @@ app.use('/api/stats', statsRoutes)
 app.use('/api/password', passwordRoutes)
 app.use('/api/admin', adminRoutes)
 app.use('/api/utilisateur', utilisateurRoutes)
+app.use('/api/tasks', taskRoutes)
 
 module.exports = app

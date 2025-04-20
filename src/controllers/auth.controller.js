@@ -24,15 +24,14 @@ exports.register = async (req, res) => {
 
 exports.login = async (req, res) => {
   const { email, password } = req.body;
-  // On cherche l'entreprise avec l'email du responsable
-  const entreprise = await prisma.entreprise.findUnique({ where: { emailResponsable: email } });
-  if (!entreprise || !(await bcrypt.compare(password, entreprise.motDePasse))) {
-    return res.status(401).json({ error: 'Identifiants invalides' });
-  }
-  // Chercher le responsable utilisateur correspondant à cet email
+  // On cherche l'utilisateur avec cet email
   const user = await prisma.utilisateur.findUnique({ where: { email } });
   if (!user) {
     return res.status(401).json({ error: 'Utilisateur non trouvé pour cet email.' });
+  }
+  // Vérifie le mot de passe hashé
+  if (!(await bcrypt.compare(password, user.password))) {
+    return res.status(401).json({ error: 'Identifiants invalides' });
   }
   // Récupérer l'entrepriseId via la table de jointure
   const lien = await prisma.utilisateurEntreprise.findFirst({ where: { utilisateurId: user.id } });
