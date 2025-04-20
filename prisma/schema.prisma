@@ -130,14 +130,17 @@ model Competence {
 model Planning {
   id                Int      @id @default(autoincrement())
   date              DateTime
+  label             String?   // tâche assignée
   moment            String   // 'AM' ou 'PM'
   employeeId        Int
-  replaceEmployeeId Int
-  absenceId         Int
+  replaceEmployeeId Int?
+  absenceId         Int?
 
   employee          Utilisateur @relation("PlanningEmployee", fields: [employeeId], references: [id], onDelete: Cascade)
-  replacedEmployee  Utilisateur @relation("PlanningReplaced", fields: [replaceEmployeeId], references: [id], onDelete: Cascade)
-  absence           Absence     @relation(fields: [absenceId], references: [id])
+  replacedEmployee  Utilisateur? @relation("PlanningReplaced", fields: [replaceEmployeeId], references: [id], onDelete: Cascade)
+  absence           Absence?     @relation(fields: [absenceId], references: [id])
+
+  @@unique([employeeId, date])
 }
 
 model Task {
