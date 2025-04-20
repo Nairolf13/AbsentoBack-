@@ -43,6 +43,12 @@ exports.declarerAbsenceEtGenererRemplacement = async (req, res) => {
           endDate,
         },
       });
+
+      // Récupérer les infos du déclarant (celui qui a déclaré l'absence)
+      const declarant = await prisma.utilisateur.findUnique({ where: { id: employeeId } });
+      const declarantPrenom = declarant?.prenom || '(prénom inconnu)';
+      const declarantNom = declarant?.nom || '(nom inconnu)';
+
       // Notifier tous les managers, RH et admins à la déclaration d'absence
       const destinataires = await prisma.utilisateur.findMany({
         where: {
@@ -51,98 +57,24 @@ exports.declarerAbsenceEtGenererRemplacement = async (req, res) => {
         }
       });
       for (const destinataire of destinataires) {
-        sendNotificationToUser(destinataire.id.toString(), `Nouvelle absence déclarée par ${req.user.prenom} ${req.user.nom} le ${date}.`);
+        sendNotificationToUser(destinataire.id.toString(), `Nouvelle absence déclarée par ${declarantPrenom} ${declarantNom} le ${date}.`);
         getIo().to(`user_${destinataire.id}`).emit('notification', {
-          message: `Nouvelle absence déclarée par ${req.user.prenom} ${req.user.nom} le ${date}.`,
+          message: `Nouvelle absence déclarée par ${declarantPrenom} ${declarantNom} le ${date}.`,
           date: new Date(),
         });
         await prisma.notification.create({
           data: {
             userId: destinataire.id,
-            message: `Nouvelle absence déclarée par ${req.user.prenom} ${req.user.nom} le ${date}.`,
+            message: `Nouvelle absence déclarée par ${declarantPrenom} ${declarantNom} le ${date}.`,
             date: new Date(),
             lu: false
           }
         });
       }
-      // 2. Recherche d'un remplaçant
-      let remplacant = null;
-      try {
-        remplacant = await proposerRemplacant(absence);
-      } catch (e) {
-        console.log('Erreur lors de la recherche de remplaçant :', e.message);
-      }
-      if (!remplacant) {
-        return res.status(200).json({ message: "Absence enregistrée, mais aucun remplaçant disponible pour cette période." });
-      }
-      // 3. Mise à jour automatique du planning
-      await updatePlanningWithReplacement(absence.id, remplacant);
-      // Notifier le remplaçant
-      sendNotificationToUser(remplacant.id.toString(), `Vous avez été désigné comme remplaçant de ${req.user.prenom} ${req.user.nom} le ${date}.`);
-      getIo().to(`user_${remplacant.id}`).emit('notification', {
-        message: `Vous avez été désigné comme remplaçant de ${req.user.prenom} ${req.user.nom} le ${date}.`,
-        date: new Date(),
-      });
-      await prisma.notification.create({
-        data: {
-          userId: remplacant.id,
-          message: `Vous avez été désigné comme remplaçant de ${req.user.prenom} ${req.user.nom} le ${date}.`,
-          date: new Date(),
-          lu: false
-        }
-      });
-      // Notifier l'employé absent
-      const employeeAbsent = await prisma.utilisateur.findUnique({ where: { id: Number(employeeId) } });
-      console.log('employeeAbsent:', employeeAbsent);
-      sendNotificationToUser(employeeAbsent.id.toString(), `Votre absence du ${date} a été prise en compte et un remplaçant a été affecté.`);
-      getIo().to(`user_${employeeAbsent.id}`).emit('notification', {
-        message: `Votre absence du ${date} a été prise en compte et un remplaçant a été affecté.`,
-        date: new Date(),
-      });
-      await prisma.notification.create({
-        data: {
-          userId: employeeAbsent.id,
-          message: `Votre absence du ${date} a été prise en compte et un remplaçant a été affecté.`,
-          date: new Date(),
-          lu: false
-        }
-      });
-      // Notifier tous les admins du remplacement
-      const absentNom = employeeAbsent?.nom || '(nom inconnu)';
-      const absentPrenom = employeeAbsent?.prenom || '(prénom inconnu)';
-      for (const destinataire of destinataires) {
-        sendNotificationToUser(destinataire.id.toString(), `${remplacant.prenom} ${remplacant.nom} a été affecté en remplacement de ${absentPrenom} ${absentNom} pour le ${date}.`);
-        getIo().to(`user_${destinataire.id}`).emit('notification', {
-          message: `${remplacant.prenom} ${remplacant.nom} a été affecté en remplacement de ${absentPrenom} ${absentNom} pour le ${date}.`,
-          date: new Date(),
-        });
-        await prisma.notification.create({
-          data: {
-            userId: destinataire.id,
-            message: `${remplacant.prenom} ${remplacant.nom} a été affecté en remplacement de ${absentPrenom} ${absentNom} pour le ${date}.`,
-            date: new Date(),
-            lu: false
-          }
-        });
-      }
-      // 4. Notifications automatiques
-      const manager = await prisma.utilisateur.findFirst({ where: { role: 'ADMIN' } });
-      await sendEmail(
-        remplacant.email,
-        'Nouveau remplacement à effectuer',
-        `<p>Bonjour ${remplacant.prenom},<br>Vous avez été affecté en remplacement de ${req.user.prenom} ${req.user.nom} le ${date} de ${heureDebut} à ${heureFin}.</p>`
-      );
-      await sendEmail(
-        manager.email,
-        'Un remplacement a été automatiquement affecté',
-        `<p>Le système a automatiquement affecté ${remplacant.prenom} ${remplacant.nom} en remplacement de ${employeeAbsent.prenom} ${employeeAbsent.nom} pour le ${date}.</p>`
-      );
-      await sendEmail(
-        employeeAbsent.email,
-        'Votre absence a été prise en compte',
-        `<p>Bonjour ${employeeAbsent.prenom},<br>Votre absence du ${date} a été enregistrée et un remplaçant a été affecté automatiquement.</p>`
-      );
-      res.status(200).json({ message: "Absence déclarée et remplaçant affecté.", remplacant });
+      // SUPPRESSION du remplacement automatique et des notifications associées
+      // Ancien code supprimé : recherche de remplaçant, update planning, notification remplaçant, mails
+      // Fin suppression
+      res.status(200).json({ message: "Absence enregistrée." });
     } catch (error) {
       console.error("Erreur dans le traitement de l’absence :", error);
       res.status(500).json({ message: "Une erreur est survenue lors de la déclaration de l'absence." });
