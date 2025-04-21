@@ -52,6 +52,24 @@ async function validerRemplacement(req, res) {
       }
     }
 
+    // Notifier l'employé absent du nom du remplaçant choisi
+    if (remplacant && absence && absence.employee) {
+      const message = `Votre absence du ${absence.startDate.toLocaleDateString()} au ${absence.endDate.toLocaleDateString()} sera remplacée par ${remplacant.prenom} ${remplacant.nom}.`;
+      await prisma.notification.create({
+        data: {
+          userId: absence.employee.id,
+          message,
+          date: new Date(),
+          lu: false
+        }
+      });
+      // Envoi temps réel si websocket dispo
+      try {
+        const { sendNotificationToUser } = require('../services/websocket');
+        sendNotificationToUser(absence.employee.id.toString(), message);
+      } catch (e) { /* ignore ws error */ }
+    }
+
     res.status(200).json({
       message: 'Planning mis à jour avec succès',
       planning

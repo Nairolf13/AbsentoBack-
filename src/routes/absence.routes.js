@@ -12,8 +12,8 @@ router.use((req, res, next) => {
   next();
 });
 
-// Déclaration
-router.post('/declarer', verifyToken, absenceController.declarerAbsenceEtGenererRemplacement);
+// Déclaration avec justificatif (PDF ou image/photo)
+router.post('/declarer', verifyToken, upload.single('justificatif'), absenceController.declarerAbsenceEtGenererRemplacement);
 
 // Upload justificatif
 router.post('/justificatif/:absenceId', verifyToken, upload.single('justificatif'), absenceController.uploadJustificatif);

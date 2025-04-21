@@ -155,3 +155,17 @@ exports.deleteNotification = async (req, res) => {
     res.status(500).json({ error: 'Erreur suppression notification' });
   }
 };
+
+// Nouvelle route : marquer une notification comme lue
+exports.markNotificationAsRead = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const notif = await prisma.notification.update({
+      where: { id: Number(id) },
+      data: { lu: true }
+    });
+    res.json(notif);
+  } catch (err) {
+    res.status(500).json({ error: 'Erreur lors du passage en lu' });
+  }
+};

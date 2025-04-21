@@ -188,7 +188,7 @@ model Notification {
   id      Int         @id @default(autoincrement())
   userId  Int
   user    Utilisateur @relation(fields: [userId], references: [id], onDelete: Cascade)
-  message String
+  message String      @db.Text
   date    DateTime    @default(now())
   lu      Boolean     @default(false)
 }
