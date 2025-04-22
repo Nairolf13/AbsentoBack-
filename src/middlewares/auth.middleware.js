@@ -10,13 +10,13 @@ function verifyToken(req, res, next) {
     return res.status(401).json({ error: 'Token manquant' });
   }
   // Log le token reçu pour debug
-  console.log('AUTH DEBUG: Token reçu =', token);
+  // console.log('AUTH DEBUG: Token reçu =', token);
   jwt.verify(token, process.env.JWT_SECRET, async (err, user) => {
     if (err) {
       console.error('AUTH ERROR: JWT error', err);
       return res.status(403).json({ error: 'Token invalide', details: err.message, tokenRecu: token });
     }
-    console.log('DEBUG verifyToken: user =', user);
+    // console.log('DEBUG verifyToken: user =', user);
     req.user = user;
     next();
   });
