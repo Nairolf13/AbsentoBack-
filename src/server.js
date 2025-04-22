@@ -14,6 +14,6 @@ app.get('*', (req, res) => {
 initSocket(http);
 
 const PORT = process.env.PORT || 3001;
-http.listen(PORT, () => {
-  console.log(`Serveur lancé sur le port ${PORT}`);
+http.listen(process.env.PORT , '0.0.0.0', () => {
+  console.log(`Serveur lancé sur le port ${process.env.PORT || 5888}`);
 });
