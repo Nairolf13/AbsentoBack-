@@ -13,7 +13,7 @@ app.get('*', (req, res) => {
 
 initSocket(http);
 
-const PORT = process.env.PORT || 3001;
-http.listen(process.env.PORT , '0.0.0.0', () => {
-  console.log(`Serveur lancé sur le port ${process.env.PORT || 5888}`);
+const PORT = process.env.PORT || 5888;
+http.listen(PORT, '0.0.0.0', () => {
+  console.log(`Serveur lancé sur le port ${PORT}`);
 });
