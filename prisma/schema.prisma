@@ -56,6 +56,7 @@ model Utilisateur {
   passwordTokenExpires  DateTime?
   notifications   Notification[]
   tasks           Task[]
+  createdTasks    Task[] @relation("CreatedTasks")
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
 
@@ -150,6 +151,8 @@ model Task {
   completed Boolean  @default(false)
   user      Utilisateur @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    Int
+  createdBy Int?
+  creator   Utilisateur? @relation("CreatedTasks", fields: [createdBy], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

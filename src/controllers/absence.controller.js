@@ -43,6 +43,61 @@ exports.declarerAbsenceEtGenererRemplacement = async (req, res) => {
       },
     });
 
+    // Ajout automatique dans le planning : chaque heure concernée, de 8h à 17h chaque jour
+    const planningEntries = [];
+    let currentDay = new Date(startDate);
+    currentDay.setHours(0, 0, 0, 0);
+    const lastDay = new Date(endDate);
+    lastDay.setHours(0, 0, 0, 0);
+    while (currentDay <= lastDay) {
+      let startHour, endHour;
+      if (currentDay.getTime() === new Date(startDate).setHours(0,0,0,0)) {
+        // Premier jour : de l'heure de début à 17h
+        startHour = startDate.getHours();
+        endHour = (currentDay.getTime() === new Date(endDate).setHours(0,0,0,0)) ? endDate.getHours() : 17;
+      } else if (currentDay.getTime() === new Date(endDate).setHours(0,0,0,0)) {
+        // Dernier jour : de 8h à l'heure de fin
+        startHour = 8;
+        endHour = endDate.getHours();
+      } else {
+        // Jours intermédiaires : 8h à 17h
+        startHour = 8;
+        endHour = 17;
+      }
+      for (let h = startHour; h <= endHour; h++) {
+        let slotDate = new Date(currentDay);
+        slotDate.setHours(h, 0, 0, 0);
+        planningEntries.push({ employeeId, date: slotDate, label: type, absenceId: absence.id });
+      }
+      currentDay.setDate(currentDay.getDate() + 1);
+    }
+
+    // Nettoyer les anciens créneaux d'absence pour l'employé et la période concernée
+    await prisma.planning.deleteMany({
+      where: {
+        employeeId,
+        date: {
+          gte: startDate,
+          lte: endDate
+        },
+        absenceId: { not: null }
+      }
+    });
+
+    // Insertion dans la table planning (par heure)
+    for (const entry of planningEntries) {
+      const hour = entry.date.getHours();
+      await prisma.planning.create({
+        data: {
+          employeeId: entry.employeeId,
+          date: entry.date,
+          label: entry.label,
+          absenceId: entry.absenceId,
+          moment: hour < 12 ? "AM" : "PM"
+        }
+      });
+    }
+
     const declarant = await prisma.utilisateur.findUnique({ where: { id: employeeId } });
     const declarantPrenom = declarant?.prenom || '(prénom inconnu)';
     const declarantNom = declarant?.nom || '(nom inconnu)';
