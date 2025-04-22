@@ -5,9 +5,9 @@ const { initSocket } = require('./utils/socket');
 require('dotenv').config();
 const path = require('path');
 
-// Ajout pour servir le build React du frontend
+// Sert le frontend UNIQUEMENT pour les routes qui ne commencent pas par /api ou /socket.io
 app.use(express.static(path.join(__dirname, '../../absento-frontend/dist')));
-app.get('*', (req, res) => {
+app.get(/^\/(?!api|socket\.io).*/, (req, res) => {
   res.sendFile(path.join(__dirname, '../../absento-frontend/dist/index.html'));
 });
 
