@@ -6,6 +6,7 @@ const port = process.env.PORT ;
 const server = http.createServer(app);
 const io = initSocket(server);
 
-server.listen(port, () => {
-  console.log(`Serveur lancé `);
+server.listen(port, '0.0.0.0', () => {
+  console.log(`Serveur lancé`);
 });
+
