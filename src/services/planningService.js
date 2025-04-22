@@ -1,10 +1,5 @@
-// services/planningService.js
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
-
-/**
- * Met à jour automatiquement le planning après un remplacement.
- */
 
 async function updatePlanningWithReplacement(absenceId, remplaçant) {
   try {
@@ -17,7 +12,6 @@ async function updatePlanningWithReplacement(absenceId, remplaçant) {
       throw new Error('Absence introuvable');
     }
 
-    // Supposons que le planning contient les demi-journées en AM/PM
     const jours = [
       { date: absence.startDate, moment: 'AM' },
       { date: absence.startDate, moment: 'PM' },

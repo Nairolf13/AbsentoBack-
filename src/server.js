@@ -1,12 +1,19 @@
-const app = require('./app')
-const http = require('http');
-const { initSocket } = require('./utils/socket');
-const port = process.env.PORT ;
+const express = require('express');
+const cors = require('cors');
+const app = express();
+const http = require('http').createServer(app);
+const io = require('socket.io')(http, { cors: { origin: '*' } });
+const routes = require('./routes');
+const { setupSocket } = require('./utils/socket');
+require('dotenv').config();
 
-const server = http.createServer(app);
-const io = initSocket(server);
+app.use(cors());
+app.use(express.json());
+app.use('/api', routes);
 
-server.listen(port, '0.0.0.0', () => {
-  console.log(`Serveur lancé`);
+setupSocket(io);
+
+const PORT = process.env.PORT || 3001;
+http.listen(PORT, () => {
+  console.log(`Serveur lancé sur le port ${PORT}`);
 });
-
