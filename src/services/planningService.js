@@ -12,6 +12,12 @@ async function updatePlanningWithReplacement(absenceId, remplaçant) {
       throw new Error('Absence introuvable');
     }
 
+    // Sécurisation : vérifie que remplaçant et remplaçant.id existent et sont numériques
+    if (!remplaçant || typeof remplaçant.id !== 'number' || isNaN(remplaçant.id)) {
+      console.error('Remplaçant ou remplaçant.id invalide :', remplaçant);
+      throw new Error('Remplaçant ou remplaçant.id invalide : ' + JSON.stringify(remplaçant));
+    }
+
     const jours = [
       { date: absence.startDate, moment: 'AM' },
       { date: absence.startDate, moment: 'PM' },

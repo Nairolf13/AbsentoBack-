@@ -5,13 +5,15 @@ const upload = multer({ dest: 'public/uploads' });
 
 const absenceController = require('../controllers/absence.controller');
 const { verifyToken } = require('../middlewares/auth.middleware');
+const { validateBody } = require('../middlewares/validate.middleware');
+const { absenceCreateSchema } = require('../utils/validationSchemas');
 
 router.use((req, res, next) => {
   console.log('Absence router hit:', req.method, req.originalUrl);
   next();
 });
 
-router.post('/declarer', verifyToken, upload.single('justificatif'), absenceController.declarerAbsenceEtGenererRemplacement);
+router.post('/declarer', verifyToken, validateBody(absenceCreateSchema), upload.single('justificatif'), absenceController.declarerAbsenceEtGenererRemplacement);
 
 router.post('/justificatif/:absenceId', verifyToken, upload.single('justificatif'), absenceController.uploadJustificatif);
 

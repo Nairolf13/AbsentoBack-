@@ -1,5 +1,6 @@
 // src/utils/socket.js
 const { Server } = require('socket.io');
+const socketAuthMiddleware = require('../middlewares/socketAuth.middleware');
 let ioInstance;
 
 function initSocket(server) {
@@ -9,6 +10,9 @@ function initSocket(server) {
       methods: ['GET', 'POST']
     }
   });
+  // Ajout du middleware d'authentification
+  ioInstance.use(socketAuthMiddleware);
+
   ioInstance.on('connection', (socket) => {
     console.log('Nouveau client connecté via socket.io');
     // On attend que le client s'identifie avec son userId

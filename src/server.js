@@ -1,5 +1,5 @@
 const app = require('./app');
-const express = require('express'); // ajouté pour utiliser express.static
+const express = require('express');
 const http = require('http').createServer(app);
 const { initSocket } = require('./utils/socket');
 require('dotenv').config();

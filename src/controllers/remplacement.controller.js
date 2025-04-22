@@ -5,12 +5,13 @@ const prisma = new PrismaClient();
 
 async function validerRemplacement(req, res) {
   try {
-    const { absenceId, remplaçantId } = req.body;
+    const { absenceId, remplaçantId, remplacantId } = req.body;
+    const idRemplacant = remplaçantId ?? remplacantId;
 
-    const planning = await updatePlanningWithReplacement(absenceId, { id: remplaçantId });
+    const planning = await updatePlanningWithReplacement(absenceId, { id: Number(idRemplacant) });
 
     // Récupération des infos du remplaçant et de l'absent
-    const remplacant = await prisma.utilisateur.findUnique({ where: { id: parseInt(remplaçantId, 10) } });
+    const remplacant = await prisma.utilisateur.findUnique({ where: { id: parseInt(idRemplacant, 10) } });
     const absence = await prisma.absence.findUnique({
       where: { id: absenceId },
       include: { employee: true }
@@ -20,12 +21,12 @@ async function validerRemplacement(req, res) {
     await prisma.remplacement.upsert({
       where: { absenceId: parseInt(absenceId, 10) },
       update: {
-        remplacantId: parseInt(remplaçantId, 10),
+        remplacantId: parseInt(idRemplacant, 10),
         status: "En cours",
       },
       create: {
         absenceId: parseInt(absenceId, 10),
-        remplacantId: parseInt(remplaçantId, 10),
+        remplacantId: parseInt(idRemplacant, 10),
         remplaceId: typeof absence.employeeId === 'string' ? parseInt(absence.employeeId, 10) : absence.employeeId, 
         status: "En cours",
       }
@@ -84,11 +85,21 @@ async function validerRemplacement(req, res) {
 async function getRemplacantsPossibles(req, res) {
   try {
     const { poste, absentId } = req.query;
+    const entrepriseId = req.user.entrepriseId;
     if (!poste) return res.status(400).json({ error: 'poste requis' });
+    if (!entrepriseId) return res.status(400).json({ error: "Entreprise requise" });
+
+    // Récupère tous les employés de la même entreprise, même poste, hors absent
+    const liens = await prisma.utilisateurEntreprise.findMany({
+      where: { entrepriseId: entrepriseId },
+    });
+    const userIds = liens.map(lien => lien.utilisateurId);
+
     const candidats = await prisma.utilisateur.findMany({
       where: {
-        poste,
-        id: { not: parseInt(absentId, 10) }
+        id: { in: userIds, not: parseInt(absentId, 10) },
+        poste: { equals: poste },
+        role: 'EMPLOYE',
       },
       select: {
         id: true, nom: true, prenom: true, email: true, telephone: true

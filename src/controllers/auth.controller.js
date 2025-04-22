@@ -37,8 +37,22 @@ exports.login = async (req, res) => {
   // Récupérer l'entrepriseId via la table de jointure
   const lien = await prisma.utilisateurEntreprise.findFirst({ where: { utilisateurId: user.id } });
   const entrepriseId = lien ? lien.entrepriseId : null;
-  const token = jwt.sign({ id: user.id, role: user.role, entrepriseId }, process.env.JWT_SECRET);
-  res.json({ token });
+  const token = jwt.sign({ id: user.id, role: user.role, entrepriseId }, process.env.JWT_SECRET, { expiresIn: '1h' });
+  res.cookie('token', token, {
+    httpOnly: true,
+    secure: false, 
+    sameSite: 'lax', 
+    domain: undefined, 
+    path: '/',
+    maxAge: 3600000 // 1h
+  });
+  res.json({ success: true });
+};
+
+// Déconnexion : suppression du cookie
+exports.logout = (req, res) => {
+  res.clearCookie('token', { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict' });
+  res.json({ success: true });
 };
 
 // Création d'une entreprise et du responsable (registerEntreprise)

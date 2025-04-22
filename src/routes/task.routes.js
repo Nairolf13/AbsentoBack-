@@ -4,6 +4,8 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const { verifyToken } = require('../middlewares/auth.middleware');
 const { sendNotificationToUser } = require('../services/websocket');
+const { validateBody } = require('../middlewares/validate.middleware');
+const { taskCreateSchema } = require('../utils/validationSchemas');
 
 // Récupérer toutes les tâches de l'utilisateur connecté
 router.get('/', verifyToken, async (req, res) => {
@@ -16,7 +18,7 @@ router.get('/', verifyToken, async (req, res) => {
 });
 
 // Ajouter une tâche
-router.post('/', verifyToken, async (req, res) => {
+router.post('/', verifyToken, validateBody(taskCreateSchema), async (req, res) => {
   const { title, userId } = req.body;
   if (!title) return res.status(400).json({ error: 'Le titre est requis.' });
   try {

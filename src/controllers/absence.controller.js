@@ -17,13 +17,16 @@ exports.declarerAbsenceEtGenererRemplacement = async (req, res) => {
         return res.status(400).json({ message: 'employeeId manquant.' });
       }
     }
-    if (!dateDebut || !dateFin || !type || !heureDebut || !heureFin) {
+    if (!dateDebut || !dateFin || !type) {
       return res.status(400).json({ message: 'Champs obligatoires manquants.', body: req.body });
     }
+    // Gestion des heures optionnelles pour permettre les absences à la journée
+    let heureDebutValue = heureDebut || '08:00';
+    let heureFinValue = heureFin || '17:00';
     const today = new Date();
     today.setHours(0, 0, 0, 0); 
-    const startDate = new Date(`${dateDebut}T${heureDebut}`);
-    const endDate = new Date(`${dateFin}T${heureFin}`);
+    const startDate = new Date(`${dateDebut}T${heureDebutValue}`);
+    const endDate = new Date(`${dateFin}T${heureFinValue}`);
     if (startDate < today) {
       return res.status(400).json({ message: "Impossible de déclarer une absence dans le passé." });
     }
@@ -107,8 +110,8 @@ exports.declarerAbsenceEtGenererRemplacement = async (req, res) => {
       return date.toLocaleDateString('fr-FR');
     };
     const duree = (() => {
-      const d1 = new Date(`${dateDebut}T${heureDebut}`);
-      const d2 = new Date(`${dateFin}T${heureFin}`);
+      const d1 = new Date(`${dateDebut}T${heureDebutValue}`);
+      const d2 = new Date(`${dateFin}T${heureFinValue}`);
       const diff = Math.abs(d2 - d1);
       const heures = diff / (1000 * 60 * 60);
       if (heures <= 5) return 'Demi-journée';
@@ -116,7 +119,7 @@ exports.declarerAbsenceEtGenererRemplacement = async (req, res) => {
       const jours = Math.ceil(diff / (1000 * 60 * 60 * 24));
       return jours > 1 ? `${jours} jours` : `1 jour`;
     })();
-    const adminMessage = `Nouvelle absence déclarée\nEmployé : ${declarantPrenom} ${declarantNom}\nType : ${type}${motif ? `\nMotif : ${motif}` : ''}\nDurée : ${duree}\nDu ${formatDate(startDate)} à ${heureDebut} au ${formatDate(endDate)} à ${heureFin}`;
+    const adminMessage = `Nouvelle absence déclarée\nEmployé : ${declarantPrenom} ${declarantNom}\nType : ${type}${motif ? `\nMotif : ${motif}` : ''}\nDurée : ${duree}\nDu ${formatDate(startDate)} à ${heureDebutValue} au ${formatDate(endDate)} à ${heureFinValue}`;
     const destinataires = await prisma.utilisateur.findMany({
       where: {
         role: { in: ['ADMIN', 'RH', 'MANAGER'] },
@@ -293,9 +296,13 @@ exports.getMyRemplacements = async (req, res) => {
 
 exports.getAbsencesSansRemplacant = async (req, res) => {
   try {
+    // Affiche toutes les absences dont le remplacement n'est pas validé (ou pas de remplacement du tout)
     const absences = await prisma.absence.findMany({
       where: {
-        remplacement: null,
+        OR: [
+          { remplacement: null },
+          { remplacement: { status: { not: 'Validé' } } }
+        ]
       },
       include: {
         employee: true, 
