@@ -21,6 +21,8 @@ router.get('/mes-remplacements', verifyToken, absenceController.getMyRemplacemen
 
 router.get('/toutes', verifyToken, absenceController.getAllAbsences);
 
+router.get('/', verifyToken, absenceController.getAllAbsences);
+
 router.get('/sans-remplacant', verifyToken, absenceController.getAbsencesSansRemplacant);
 
 router.patch('/valider/:absenceId', verifyToken, (req, res, next) => {

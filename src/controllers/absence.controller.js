@@ -254,3 +254,13 @@ exports.getAbsencesSansRemplacant = async (req, res) => {
     res.status(500).json({ error: 'Erreur récupération absences sans remplaçant', details: err.message });
   }
 };
+
+exports.validerRemplacement = async (req, res) => {
+  // TODO: implémentation réelle
+  res.status(200).json({ message: "Remplacement validé (exemple)." });
+};
+
+exports.refuserRemplacement = async (req, res) => {
+  // TODO: implémentation réelle
+  res.status(200).json({ message: "Remplacement refusé (exemple)." });
+};
