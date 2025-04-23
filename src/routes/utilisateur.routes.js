@@ -6,7 +6,7 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 // Création d'un utilisateur (employé, RH, manager)
-router.post('/create', utilisateurController.createUtilisateur);
+router.post('/create', verifyToken, utilisateurController.createUtilisateur);
 
 // Modification utilisateur
 router.put('/:id', utilisateurController.updateUtilisateur);

@@ -26,7 +26,8 @@ const loginSchema = Joi.object({
 const taskCreateSchema = Joi.object({
   title: Joi.string().min(2).max(100).required(),
   description: Joi.string().max(500).allow('').optional(),
-  dueDate: Joi.date().optional()
+  dueDate: Joi.date().optional(),
+  userId: Joi.number().integer().optional() // <-- Ajouté pour permettre l'assignation
 });
 
 module.exports = {

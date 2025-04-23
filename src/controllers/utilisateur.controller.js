@@ -32,6 +32,14 @@ exports.updateUtilisateur = async (req, res) => {
   try {
     const { id } = req.params;
     const data = req.body;
+    if ('id' in data) delete data.id;
+
+    let nouvelleEntrepriseId = null;
+    if ('entreprise' in data && data.entreprise && data.entreprise.id) {
+      nouvelleEntrepriseId = data.entreprise.id;
+      delete data.entreprise;
+    }
+
     if (data.motDePasse) {
       data.password = await bcrypt.hash(data.motDePasse, 10);
       delete data.motDePasse;
@@ -39,7 +47,28 @@ exports.updateUtilisateur = async (req, res) => {
     if (data.dateNaissance) {
       data.dateNaissance = new Date(data.dateNaissance);
     }
-    const utilisateur = await prisma.utilisateur.update({ where: { id: parseInt(id) }, data });
+
+    // 1. Mise à jour de l'utilisateur (hors jointure)
+    const utilisateur = await prisma.utilisateur.update({
+      where: { id: parseInt(id) },
+      data
+    });
+
+    // 2. Gestion de la jointure entreprise (si demandé)
+    if (nouvelleEntrepriseId) {
+      // Supprime toutes les anciennes liaisons
+      await prisma.utilisateurEntreprise.deleteMany({
+        where: { utilisateurId: parseInt(id) }
+      });
+      // Crée la nouvelle liaison
+      await prisma.utilisateurEntreprise.create({
+        data: {
+          utilisateurId: parseInt(id),
+          entrepriseId: nouvelleEntrepriseId
+        }
+      });
+    }
+
     res.json({ message: 'Utilisateur modifié', utilisateur });
   } catch (err) {
     res.status(400).json({ error: err.message });
