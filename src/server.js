@@ -5,6 +5,9 @@ const { initSocket } = require('./utils/socket');
 require('dotenv').config();
 const path = require('path');
 
+// Sert les fichiers justificatifs statiques
+app.use('/uploads', express.static(path.join(__dirname, '../../public/uploads')));
+
 // Sert le frontend UNIQUEMENT pour les routes qui ne commencent pas par /api ou /socket.io
 app.use(express.static(path.join(__dirname, '../../absento-frontend/dist')));
 app.get(/^\/(?!api|socket\.io).*/, (req, res) => {

@@ -1,7 +1,20 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
-const upload = multer({ dest: 'public/uploads' });
+const path = require('path');
+const { v4: uuidv4 } = require('uuid');
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'public/uploads');
+  },
+  filename: function (req, file, cb) {
+    const ext = path.extname(file.originalname);
+    const name = uuidv4();
+    cb(null, name + ext);
+  }
+});
+const upload = multer({ storage });
 
 const absenceController = require('../controllers/absence.controller');
 const { verifyToken } = require('../middlewares/auth.middleware');
