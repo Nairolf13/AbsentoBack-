@@ -46,7 +46,7 @@ exports.login = async (req, res) => {
     path: '/',
     maxAge: 3600000 // 1h
   });
-  res.json({ success: true });
+  res.json({ success: true, token });
 };
 
 // Déconnexion : suppression du cookie
