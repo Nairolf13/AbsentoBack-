@@ -5,16 +5,9 @@ const { verifyToken } = require('../middlewares/auth.middleware');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-// Création d'un utilisateur (employé, RH, manager)
 router.post('/create', verifyToken, utilisateurController.createUtilisateur);
-
-// Modification utilisateur
 router.put('/:id', utilisateurController.updateUtilisateur);
-
-// Suppression utilisateur
 router.delete('/:id', utilisateurController.deleteUtilisateur);
-
-// Endpoint pour récupérer le profil de l'utilisateur connecté
 router.get('/me', async (req, res) => {
   try {
     if (!req.user || typeof req.user.id === 'undefined') {
@@ -43,13 +36,8 @@ router.get('/me', async (req, res) => {
   }
 });
 
-// Récupérer infos utilisateur
 router.get('/:id', utilisateurController.getUtilisateur);
-
-// Liste des employés liés à l'entreprise de l'utilisateur connecté
 router.get('/entreprise/employes', verifyToken, utilisateurController.getUsersByEntreprise);
-
-// Import CSV employés
 router.post('/import-csv', utilisateurController.importCSV);
 
 module.exports = router;

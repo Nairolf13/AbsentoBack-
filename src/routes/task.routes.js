@@ -7,7 +7,6 @@ const { sendNotificationToUser } = require('../services/websocket');
 const { validateBody } = require('../middlewares/validate.middleware');
 const { taskCreateSchema } = require('../utils/validationSchemas');
 
-// Récupérer toutes les tâches de l'utilisateur connecté
 router.get('/', verifyToken, async (req, res) => {
   try {
     const tasks = await prisma.task.findMany({ where: { userId: req.user.id } });
@@ -17,23 +16,18 @@ router.get('/', verifyToken, async (req, res) => {
   }
 });
 
-// Ajouter une tâche
 router.post('/', verifyToken, validateBody(taskCreateSchema), async (req, res) => {
   const { title, userId } = req.body;
   if (!title) return res.status(400).json({ error: 'Le titre est requis.' });
   try {
     let targetUserId = req.user.id;
-    // Si userId est fourni, non vide et différent de l'utilisateur courant, et que le créateur est RH/MANAGER/RESPONSABLE/ADMIN, on assigne la tâche à l'employé choisi
     if (userId && userId !== '' && userId !== req.user.id && ['RH', 'MANAGER', 'RESPONSABLE', 'ADMIN'].includes(req.user.role)) {
       targetUserId = userId;
     }
-    // Création de la tâche
     const task = await prisma.task.create({
       data: { title, userId: targetUserId, createdBy: req.user.id }
     });
-    // Si la tâche est assignée à un autre employé, créer une notification et envoyer via websocket
     if (targetUserId != req.user.id) {
-      // Créer une notification en base
       await prisma.notification.create({
         data: {
           userId: Number(targetUserId),
@@ -42,7 +36,6 @@ router.post('/', verifyToken, validateBody(taskCreateSchema), async (req, res) =
           lu: false
         }
       });
-      // Envoi temps réel via WebSocket
       try {
         sendNotificationToUser(String(targetUserId), `Une nouvelle tâche vous a été assignée : "${title}"`);
       } catch (e) { /* ignore ws error */ }
@@ -53,7 +46,6 @@ router.post('/', verifyToken, validateBody(taskCreateSchema), async (req, res) =
   }
 });
 
-// Modifier une tâche
 router.put('/:id', verifyToken, async (req, res) => {
   const { title, completed } = req.body;
   try {
@@ -69,7 +61,6 @@ router.put('/:id', verifyToken, async (req, res) => {
   }
 });
 
-// Supprimer une tâche
 router.delete('/:id', verifyToken, async (req, res) => {
   try {
     const task = await prisma.task.findFirst({ where: { id: Number(req.params.id), userId: req.user.id } });
@@ -81,13 +72,11 @@ router.delete('/:id', verifyToken, async (req, res) => {
   }
 });
 
-// Nouvelle route : tâches assignées par moi
 router.get('/assigned-by-me', verifyToken, async (req, res) => {
   try {
     const tasks = await prisma.task.findMany({
       where: {
         createdBy: req.user.id,
-        // Exclure les tâches qui me sont assignées à moi-même
         NOT: { userId: req.user.id }
       },
       include: {

@@ -2,7 +2,6 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const bcrypt = require('bcrypt');
 
-// Inscription d'une entreprise
 exports.registerEntreprise = async (req, res) => {
   try {
     const {
@@ -41,7 +40,6 @@ exports.registerEntreprise = async (req, res) => {
   }
 };
 
-// Modifier infos entreprise
 exports.updateEntreprise = async (req, res) => {
   try {
     const { id } = req.params;
@@ -56,7 +54,6 @@ exports.updateEntreprise = async (req, res) => {
   }
 };
 
-// Supprimer entreprise
 exports.deleteEntreprise = async (req, res) => {
   try {
     const { id } = req.params;
@@ -67,7 +64,6 @@ exports.deleteEntreprise = async (req, res) => {
   }
 };
 
-// Récupérer infos entreprise
 exports.getEntreprise = async (req, res) => {
   try {
     const { id } = req.params;

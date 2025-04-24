@@ -18,7 +18,7 @@ router.post('/import', upload.single('file'), async (req, res) => {
         phone: row['Téléphone'],
         position: row['Poste'],
         password: row['Mot de passe'],
-        planning: row['Planning'], // à parser si complexe
+        planning: row['Planning'], 
       });
     })
     .on('end', async () => {
@@ -26,7 +26,7 @@ router.post('/import', upload.single('file'), async (req, res) => {
         for (const emp of employees) {
           await prisma.employee.create({ data: emp });
         }
-        fs.unlinkSync(filePath); // nettoyage
+        fs.unlinkSync(filePath); 
         res.status(200).send({ message: 'Import réussi' });
       } catch (err) {
         res.status(500).send({ error: 'Erreur d\'importation' });

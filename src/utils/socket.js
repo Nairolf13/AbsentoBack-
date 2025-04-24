@@ -10,12 +10,10 @@ function initSocket(server) {
       methods: ['GET', 'POST']
     }
   });
-  // Ajout du middleware d'authentification
   ioInstance.use(socketAuthMiddleware);
 
   ioInstance.on('connection', (socket) => {
     console.log('Nouveau client connecté via socket.io');
-    // On attend que le client s'identifie avec son userId
     socket.on('identify', (userId) => {
       if (userId) {
         socket.join(`user_${userId}`);

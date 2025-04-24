@@ -4,13 +4,11 @@ require('dotenv').config()
 
 const app = express()
 
-// Log global pour toutes les requêtes Express
 app.use((req, res, next) => {
   console.log('Global Express log:', req.method, req.originalUrl);
   next();
 });
 
-// Place les middlewares globaux AVANT les routes
 const corsOptions = {
   origin: [
     'http://localhost:5173',
@@ -42,22 +40,18 @@ const utilisateurRoutes = require('./routes/utilisateur.routes')
 const taskRoutes = require('./routes/task.routes')
 const planningRoutes = require('./routes/planning.routes')
 
-// Routes publiques
 app.use('/api/auth', authRoutes)
 app.use('/api/password', passwordRoutes)
 app.use('/api/entreprises', entrepriseRoutes)
 
-// Middleware d'authentification global pour toutes les routes suivantes
 const { verifyToken } = require('./middlewares/auth.middleware');
 app.use(verifyToken);
 
-// Routes protégées
 app.use('/api/users', userRoutes)
 app.use('/api/remplacements', remplacementRoutes)
 app.use('/api/stats', statsRoutes)
 app.use('/api/admin', adminRoutes)
 app.use('/api/utilisateur', utilisateurRoutes)
-// Suppression du log de debug du montage du routeur utilisateur
 app.use('/api/tasks', taskRoutes)
 app.use('/api/planning', planningRoutes)
 app.use('/api/absences', absenceRoutes)

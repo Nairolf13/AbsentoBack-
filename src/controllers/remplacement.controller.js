@@ -1,4 +1,3 @@
-// controllers/remplacementController.js
 const { updatePlanningWithReplacement } = require('../services/planningService');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
@@ -10,14 +9,12 @@ async function validerRemplacement(req, res) {
 
     const planning = await updatePlanningWithReplacement(absenceId, { id: Number(idRemplacant) });
 
-    // Récupération des infos du remplaçant et de l'absent
     const remplacant = await prisma.utilisateur.findUnique({ where: { id: parseInt(idRemplacant, 10) } });
     const absence = await prisma.absence.findUnique({
       where: { id: absenceId },
       include: { employee: true }
     });
 
-    // Met à jour ou crée le remplacement lié à l'absence
     await prisma.remplacement.upsert({
       where: { absenceId: parseInt(absenceId, 10) },
       update: {
@@ -32,9 +29,7 @@ async function validerRemplacement(req, res) {
       }
     });
 
-    // Notif et mail si remplaçant trouvé
     if (remplacant && remplacant.email) {
-      // Notification en temps réel (WebSocket)
       try {
         require('../services/websocket').sendNotificationToUser(remplacant.id.toString(), `Vous avez été choisi pour remplacer ${absence && absence.employee ? absence.employee.prenom + ' ' + absence.employee.nom : 'un collègue'} du ${absence ? absence.startDate.toLocaleDateString() : ''} au ${absence ? absence.endDate.toLocaleDateString() : ''}`);
       } catch (e) {
@@ -53,7 +48,6 @@ async function validerRemplacement(req, res) {
       }
     }
 
-    // Notifier l'employé absent du nom du remplaçant choisi
     if (remplacant && absence && absence.employee) {
       const message = `Votre absence du ${absence.startDate.toLocaleDateString()} au ${absence.endDate.toLocaleDateString()} sera remplacée par ${remplacant.prenom} ${remplacant.nom}.`;
       await prisma.notification.create({
@@ -64,7 +58,6 @@ async function validerRemplacement(req, res) {
           lu: false
         }
       });
-      // Envoi temps réel si websocket dispo
       try {
         const { sendNotificationToUser } = require('../services/websocket');
         sendNotificationToUser(absence.employee.id.toString(), message);
@@ -81,7 +74,6 @@ async function validerRemplacement(req, res) {
   }
 }
 
-// Ajoute une route pour obtenir les remplaçants possibles pour un poste donné (hors absent)
 async function getRemplacantsPossibles(req, res) {
   try {
     const { poste, absentId } = req.query;
@@ -89,7 +81,6 @@ async function getRemplacantsPossibles(req, res) {
     if (!poste) return res.status(400).json({ error: 'poste requis' });
     if (!entrepriseId) return res.status(400).json({ error: "Entreprise requise" });
 
-    // Récupère tous les employés de la même entreprise, même poste, hors absent
     const liens = await prisma.utilisateurEntreprise.findMany({
       where: { entrepriseId: entrepriseId },
     });

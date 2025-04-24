@@ -20,7 +20,6 @@ exports.declarerAbsenceEtGenererRemplacement = async (req, res) => {
     if (!dateDebut || !dateFin || !type) {
       return res.status(400).json({ message: 'Champs obligatoires manquants.', body: req.body });
     }
-    // Gestion des heures optionnelles pour permettre les absences à la journée
     let heureDebutValue = heureDebut || '08:00';
     let heureFinValue = heureFin || '17:00';
     const today = new Date();
@@ -46,7 +45,6 @@ exports.declarerAbsenceEtGenererRemplacement = async (req, res) => {
       },
     });
 
-    // Ajout automatique dans le planning : chaque heure concernée, de 8h à 17h chaque jour
     const planningEntries = [];
     let currentDay = new Date(startDate);
     currentDay.setHours(0, 0, 0, 0);
@@ -55,15 +53,12 @@ exports.declarerAbsenceEtGenererRemplacement = async (req, res) => {
     while (currentDay <= lastDay) {
       let startHour, endHour;
       if (currentDay.getTime() === new Date(startDate).setHours(0,0,0,0)) {
-        // Premier jour : de l'heure de début à 17h
         startHour = startDate.getHours();
         endHour = (currentDay.getTime() === new Date(endDate).setHours(0,0,0,0)) ? endDate.getHours() : 17;
       } else if (currentDay.getTime() === new Date(endDate).setHours(0,0,0,0)) {
-        // Dernier jour : de 8h à l'heure de fin
         startHour = 8;
         endHour = endDate.getHours();
       } else {
-        // Jours intermédiaires : 8h à 17h
         startHour = 8;
         endHour = 17;
       }
@@ -75,7 +70,6 @@ exports.declarerAbsenceEtGenererRemplacement = async (req, res) => {
       currentDay.setDate(currentDay.getDate() + 1);
     }
 
-    // Nettoyer les anciens créneaux d'absence pour l'employé et la période concernée
     await prisma.planning.deleteMany({
       where: {
         employeeId,
@@ -87,7 +81,6 @@ exports.declarerAbsenceEtGenererRemplacement = async (req, res) => {
       }
     });
 
-    // Insertion dans la table planning (par heure)
     for (const entry of planningEntries) {
       const hour = entry.date.getHours();
       await prisma.planning.create({
@@ -296,7 +289,6 @@ exports.getMyRemplacements = async (req, res) => {
 
 exports.getAbsencesSansRemplacant = async (req, res) => {
   try {
-    // Affiche toutes les absences dont le remplacement n'est pas validé (ou pas de remplacement du tout)
     const absences = await prisma.absence.findMany({
       where: {
         OR: [
@@ -318,11 +310,9 @@ exports.getAbsencesSansRemplacant = async (req, res) => {
 };
 
 exports.validerRemplacement = async (req, res) => {
-  // TODO: implémentation réelle
   res.status(200).json({ message: "Remplacement validé (exemple)." });
 };
 
 exports.refuserRemplacement = async (req, res) => {
-  // TODO: implémentation réelle
   res.status(200).json({ message: "Remplacement refusé (exemple)." });
 };

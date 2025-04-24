@@ -13,12 +13,10 @@ exports.getAllAbsences = async (req, res) => {
 
 exports.getAllEmployes = async (req, res) => {
   try {
-    // Récupérer l'entreprise de l'utilisateur connecté
     const entrepriseId = req.user?.entrepriseId;
     if (!entrepriseId) {
       return res.status(400).json({ error: "Entreprise non trouvée pour l'utilisateur connecté." });
     }
-    // Récupérer les liens utilisateur-entreprise
     const liens = await prisma.utilisateurEntreprise.findMany({
       where: { entrepriseId: entrepriseId }
     });
@@ -81,31 +79,25 @@ exports.createOrUpdateEmploye = async (req, res) => {
   const { id, nom, prenom, email, password, telephone, dateNaissance, adresse, poste, role, disponibilites, entrepriseId } = req.body;
   try {
     let utilisateur;
-    // Validation des champs obligatoires pour la création
     if (!id) {
       if (!nom || !prenom || !email || !password || !telephone || !dateNaissance || !adresse || !poste) {
         return res.status(400).json({ error: 'Champs obligatoires manquants pour la création.' });
       }
     }
     if (id) {
-      // Mise à jour d'un utilisateur existant
       const data = { nom, prenom, email, telephone, dateNaissance, adresse, poste, role };
       if (password) {
         data.password = await bcrypt.hash(password, 10);
       }
-      // Nettoyer les champs undefined
       Object.keys(data).forEach(key => data[key] === undefined && delete data[key]);
-      // Vérifier que l'id est bien un entier
       if (!Number.isInteger(id)) {
         return res.status(400).json({ error: "L'identifiant utilisateur (id) doit être un entier." });
       }
-      // S'assurer que dateNaissance est bien un objet Date si fourni
       if (data.dateNaissance) {
         data.dateNaissance = new Date(data.dateNaissance);
       }
       utilisateur = await prisma.utilisateur.update({ where: { id }, data });
     } else {
-      // Création d'un nouvel utilisateur (employé)
       const hashedPassword = await bcrypt.hash(password, 10);
       utilisateur = await prisma.utilisateur.create({
         data: {
@@ -129,7 +121,6 @@ exports.createOrUpdateEmploye = async (req, res) => {
             : undefined,
         }
       });
-      // Lier à l'entreprise si fourni
       if (entrepriseId) {
         await prisma.utilisateurEntreprise.create({
           data: {
@@ -156,7 +147,6 @@ exports.deleteNotification = async (req, res) => {
   }
 };
 
-// Nouvelle route : marquer une notification comme lue
 exports.markNotificationAsRead = async (req, res) => {
   const { id } = req.params;
   try {

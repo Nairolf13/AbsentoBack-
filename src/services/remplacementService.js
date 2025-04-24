@@ -16,13 +16,11 @@ exports.proposerRemplacant = async (absence) => {
 
   const indispoIds = indispos.map(i => i.employeeId);
 
-  // Correction : Utilise prisma.utilisateur et non prisma.user
   const disponibles = await prisma.utilisateur.findMany({
     where: {
       id: { not: employeeId, notIn: indispoIds },
-      // planning: { some: {} }, // À affiner avec des plages horaires dans le modèle plus tard
     },
-    take: 1 // On prend le premier dispo
+    take: 1
   });
 
   return disponibles[0] || null;

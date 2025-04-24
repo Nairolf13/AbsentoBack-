@@ -10,7 +10,6 @@ exports.register = async (req, res) => {
   const user = await prisma.utilisateur.create({
     data: { email, password: hashed, nom, prenom, rôle, telephone, dateNaissance, adresse, poste },
   });
-  // Lier l'utilisateur à l'entreprise si entrepriseId fourni
   if (entrepriseId) {
     await prisma.utilisateurEntreprise.create({
       data: {
@@ -23,18 +22,14 @@ exports.register = async (req, res) => {
 };
 
 exports.login = async (req, res) => {
-  // console.log('BODY LOGIN:', req.body);
   const { email, password } = req.body;
-  // On cherche l'utilisateur avec cet email
   const user = await prisma.utilisateur.findUnique({ where: { email } });
   if (!user) {
     return res.status(401).json({ error: 'Utilisateur non trouvé pour cet email.' });
   }
-  // Vérifie le mot de passe hashé
   if (!(await bcrypt.compare(password, user.password))) {
     return res.status(401).json({ error: 'Identifiants invalides' });
   }
-  // Récupérer l'entrepriseId via la table de jointure
   const lien = await prisma.utilisateurEntreprise.findFirst({ where: { utilisateurId: user.id } });
   const entrepriseId = lien ? lien.entrepriseId : null;
   const token = jwt.sign({ id: user.id, role: user.role, entrepriseId }, process.env.JWT_SECRET, { expiresIn: '1h' });
@@ -44,29 +39,25 @@ exports.login = async (req, res) => {
     sameSite: 'lax', 
     domain: undefined, 
     path: '/',
-    maxAge: 3600000 // 1h
+    maxAge: 3600000 
   });
   res.json({ success: true, token });
 };
 
-// Déconnexion : suppression du cookie
 exports.logout = (req, res) => {
   res.clearCookie('token', { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict' });
   res.json({ success: true });
 };
 
-// Création d'une entreprise et du responsable (registerEntreprise)
 exports.registerEntreprise = async (req, res) => {
   try {
     const { nom, siret, secteur, taille, adresse, telephone, emailContact, responsableNom, responsablePrenom, emailResponsable, motDePasse, dateNaissance } = req.body;
-    // Vérifier si un emailResponsable existe déjà
     const existingEntreprise = await prisma.entreprise.findUnique({
       where: { emailResponsable }
     });
     if (existingEntreprise) {
       return res.status(400).json({ error: "Un responsable avec cet email existe déjà." });
     }
-    // Création de l'entreprise
     const entreprise = await prisma.entreprise.create({
       data: {
         nom,
@@ -82,7 +73,6 @@ exports.registerEntreprise = async (req, res) => {
         motDePasse: await bcrypt.hash(motDePasse, 10),
       },
     });
-    // Création du responsable comme premier utilisateur
     const responsable = await prisma.utilisateur.create({
       data: {
         nom: responsableNom,
@@ -96,7 +86,6 @@ exports.registerEntreprise = async (req, res) => {
         role: 'ADMIN',
       },
     });
-    // Lier le responsable à l'entreprise via la table de jointure
     await prisma.utilisateurEntreprise.create({
       data: {
         utilisateurId: responsable.id,
@@ -110,12 +99,10 @@ exports.registerEntreprise = async (req, res) => {
   }
 };
 
-// Création d'un utilisateur par une entreprise (registerUser)
 exports.registerUser = async (req, res) => {
   try {
-    // On suppose que l'admin est connecté et son entrepriseId est dans le token (à adapter selon ton auth)
     const { nom, prenom, email, password, telephone, dateNaissance, adresse, poste, role } = req.body;
-    const entrepriseId = req.user.entrepriseId; // À adapter selon ton système d'authentification
+    const entrepriseId = req.user.entrepriseId; 
     const user = await prisma.utilisateur.create({
       data: {
         nom,

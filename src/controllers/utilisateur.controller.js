@@ -4,7 +4,6 @@ const bcrypt = require('bcrypt');
 const csv = require('csv-parser');
 const fs = require('fs');
 
-// Création d'un utilisateur
 exports.createUtilisateur = async (req, res) => {
   try {
     const { nom, prenom, email, motDePasse, telephone, dateNaissance, adresse, poste, role, entrepriseId } = req.body;
@@ -12,7 +11,6 @@ exports.createUtilisateur = async (req, res) => {
     const utilisateur = await prisma.utilisateur.create({
       data: { nom, prenom, email, password: hashed, telephone, dateNaissance: new Date(dateNaissance), adresse, poste, role }
     });
-    // Lier l'utilisateur à l'entreprise si entrepriseId fourni
     if (entrepriseId) {
       await prisma.utilisateurEntreprise.create({
         data: {
@@ -27,7 +25,6 @@ exports.createUtilisateur = async (req, res) => {
   }
 };
 
-// Modification utilisateur
 exports.updateUtilisateur = async (req, res) => {
   try {
     const { id } = req.params;
@@ -48,19 +45,15 @@ exports.updateUtilisateur = async (req, res) => {
       data.dateNaissance = new Date(data.dateNaissance);
     }
 
-    // 1. Mise à jour de l'utilisateur (hors jointure)
     const utilisateur = await prisma.utilisateur.update({
       where: { id: parseInt(id) },
       data
     });
 
-    // 2. Gestion de la jointure entreprise (si demandé)
     if (nouvelleEntrepriseId) {
-      // Supprime toutes les anciennes liaisons
       await prisma.utilisateurEntreprise.deleteMany({
         where: { utilisateurId: parseInt(id) }
       });
-      // Crée la nouvelle liaison
       await prisma.utilisateurEntreprise.create({
         data: {
           utilisateurId: parseInt(id),
@@ -75,7 +68,6 @@ exports.updateUtilisateur = async (req, res) => {
   }
 };
 
-// Suppression utilisateur
 exports.deleteUtilisateur = async (req, res) => {
   try {
     const { id } = req.params;
@@ -86,7 +78,6 @@ exports.deleteUtilisateur = async (req, res) => {
   }
 };
 
-// Récupérer infos utilisateur
 exports.getUtilisateur = async (req, res) => {
   try {
     const { id } = req.params;
@@ -98,13 +89,10 @@ exports.getUtilisateur = async (req, res) => {
   }
 };
 
-// Import CSV employés (exemple simple, à adapter pour multer)
 exports.importCSV = async (req, res) => {
-  // À compléter selon la méthode d'upload (multer, etc.)
   res.status(501).json({ error: 'Import CSV non implémenté ici' });
 };
 
-// Récupérer tous les utilisateurs
 exports.getAllUsers = async (req, res) => {
   try {
     const users = await prisma.utilisateur.findMany();
@@ -114,7 +102,6 @@ exports.getAllUsers = async (req, res) => {
   }
 };
 
-// Récupérer un utilisateur par ID (alias de getUtilisateur)
 exports.getUserById = async (req, res) => {
   try {
     const user = await prisma.utilisateur.findUnique({ where: { id: parseInt(req.params.id) } });
@@ -125,7 +112,6 @@ exports.getUserById = async (req, res) => {
   }
 };
 
-// Modifier le rôle d'un utilisateur
 exports.modifierRole = async (req, res) => {
   const { userId } = req.params;
   const { role } = req.body;
@@ -140,7 +126,6 @@ exports.modifierRole = async (req, res) => {
   }
 };
 
-// Modifier le planning d'un utilisateur
 exports.modifierPlanning = async (req, res) => {
   const { userId } = req.params;
   const { joursTravailles, horaires } = req.body;
@@ -155,12 +140,10 @@ exports.modifierPlanning = async (req, res) => {
   }
 };
 
-// Récupérer tous les employés d'une entreprise
 exports.getUsersByEntreprise = async (req, res) => {
   try {
     const entrepriseId = req.user.entrepriseId;
     if (!entrepriseId) return res.status(400).json({ message: "Entreprise non trouvée pour l'utilisateur connecté." });
-    // Récupère les liens utilisateurs-entreprise avec les infos utilisateur et entreprise
     const links = await prisma.utilisateurEntreprise.findMany({
       where: { entrepriseId: entrepriseId },
       include: {
@@ -185,7 +168,6 @@ exports.getUsersByEntreprise = async (req, res) => {
         }
       }
     });
-    // Formate la réponse pour chaque employé
     const users = links.map(link => ({
       ...link.utilisateur,
       entreprise: link.entreprise
