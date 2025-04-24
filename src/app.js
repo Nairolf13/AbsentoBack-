@@ -45,15 +45,14 @@ app.use('/api/password', passwordRoutes)
 app.use('/api/entreprises', entrepriseRoutes)
 
 const { verifyToken } = require('./middlewares/auth.middleware');
-app.use(verifyToken);
 
-app.use('/api/users', userRoutes)
-app.use('/api/remplacements', remplacementRoutes)
-app.use('/api/stats', statsRoutes)
-app.use('/api/admin', adminRoutes)
-app.use('/api/utilisateur', utilisateurRoutes)
-app.use('/api/tasks', taskRoutes)
-app.use('/api/planning', planningRoutes)
-app.use('/api/absences', absenceRoutes)
+app.use('/api/users', verifyToken, userRoutes)
+app.use('/api/remplacements', verifyToken, remplacementRoutes)
+app.use('/api/stats', verifyToken, statsRoutes)
+app.use('/api/admin', verifyToken, adminRoutes)
+app.use('/api/utilisateur', verifyToken, utilisateurRoutes)
+app.use('/api/tasks', verifyToken, taskRoutes)
+app.use('/api/planning', verifyToken, planningRoutes)
+app.use('/api/absences', verifyToken, absenceRoutes)
 
 module.exports = app
