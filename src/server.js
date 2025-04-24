@@ -6,9 +6,9 @@ require('dotenv').config();
 const path = require('path');
 
 app.use('/uploads', express.static(path.join(__dirname, '../../public/uploads')));
-app.use(express.static(path.join(__dirname, '../../absento-frontend/dist')));
+app.use(express.static(path.join(__dirname, '../../absentoFront/dist')));
 app.get(/^\/(?!api|socket\.io).*/, (req, res) => {
-  res.sendFile(path.join(__dirname, '../../absento-frontend/dist/index.html'));
+  res.sendFile(path.join(__dirname, '../../absentoFront/dist/index.html'));
 });
 
 initSocket(http);
