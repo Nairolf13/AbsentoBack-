@@ -6,9 +6,10 @@ const jwt = require('jsonwebtoken');
 exports.register = async (req, res) => {
   console.log('register req.body:', req.body);
   const { email, password, nom, prenom, rôle, telephone, dateNaissance, adresse, poste, entrepriseId } = req.body;
+  const normalizedEmail = email.trim().toLowerCase();
   const hashed = await bcrypt.hash(password, 10);
   const user = await prisma.utilisateur.create({
-    data: { email, password: hashed, nom, prenom, rôle, telephone, dateNaissance, adresse, poste },
+    data: { email: normalizedEmail, password: hashed, nom, prenom, rôle, telephone, dateNaissance, adresse, poste },
   });
   if (entrepriseId) {
     await prisma.utilisateurEntreprise.create({
@@ -23,7 +24,8 @@ exports.register = async (req, res) => {
 
 exports.login = async (req, res) => {
   const { email, password } = req.body;
-  const user = await prisma.utilisateur.findUnique({ where: { email } });
+  const normalizedEmail = email.trim().toLowerCase();
+  const user = await prisma.utilisateur.findUnique({ where: { email: normalizedEmail } });
   if (!user) {
     return res.status(401).json({ error: 'Utilisateur non trouvé pour cet email.' });
   }
@@ -51,7 +53,9 @@ exports.logout = (req, res) => {
 
 exports.registerEntreprise = async (req, res) => {
   try {
-    const { nom, siret, secteur, taille, adresse, telephone, emailContact, responsableNom, responsablePrenom, emailResponsable, motDePasse, dateNaissance } = req.body;
+    let { nom, siret, secteur, taille, adresse, telephone, emailContact, responsableNom, responsablePrenom, emailResponsable, motDePasse, dateNaissance } = req.body;
+    emailContact = emailContact.trim().toLowerCase();
+    emailResponsable = emailResponsable.trim().toLowerCase();
     const existingEntreprise = await prisma.entreprise.findUnique({
       where: { emailResponsable }
     });
@@ -103,11 +107,12 @@ exports.registerUser = async (req, res) => {
   try {
     const { nom, prenom, email, password, telephone, dateNaissance, adresse, poste, role } = req.body;
     const entrepriseId = req.user.entrepriseId; 
+    const normalizedEmail = email.trim().toLowerCase();
     const user = await prisma.utilisateur.create({
       data: {
         nom,
         prenom,
-        email,
+        email: normalizedEmail,
         password: await bcrypt.hash(password, 10),
         telephone,
         dateNaissance: new Date(dateNaissance),
