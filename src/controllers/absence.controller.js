@@ -208,7 +208,18 @@ exports.getMyAbsences = async (req, res) => {
 
 exports.getAllAbsences = async (req, res) => {
   try {
+    const entrepriseId = req.user.entrepriseId;
+    if (!entrepriseId) {
+      return res.status(400).json({ error: "Entreprise non trouvée pour l'utilisateur connecté." });
+    }
+    // Récupère les IDs des employés de l'entreprise
+    const liens = await prisma.utilisateurEntreprise.findMany({
+      where: { entrepriseId }
+    });
+    const employeIds = liens.map(lien => lien.utilisateurId);
+
     const absences = await prisma.absence.findMany({
+      where: { employeeId: { in: employeIds } },
       orderBy: { startDate: 'desc' },
       include: {
         employee: true,
