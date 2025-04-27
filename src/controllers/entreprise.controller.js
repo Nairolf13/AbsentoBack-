@@ -47,7 +47,7 @@ exports.updateEntreprise = async (req, res) => {
     if (data.motDePasse) {
       data.motDePasse = await bcrypt.hash(data.motDePasse, 10);
     }
-    const entreprise = await prisma.entreprise.update({ where: { id }, data });
+    const entreprise = await prisma.entreprise.update({ where: { id: Number(id) }, data });
     res.json({ message: "Entreprise modifiée", entreprise });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -67,7 +67,7 @@ exports.deleteEntreprise = async (req, res) => {
 exports.getEntreprise = async (req, res) => {
   try {
     const { id } = req.params;
-    const entreprise = await prisma.entreprise.findUnique({ where: { id } });
+    const entreprise = await prisma.entreprise.findUnique({ where: { id: Number(id) } });
     if (!entreprise) return res.status(404).json({ error: "Not found" });
     res.json(entreprise);
   } catch (err) {

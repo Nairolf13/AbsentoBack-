@@ -17,12 +17,12 @@ router.get('/me', async (req, res) => {
     if (typeof prisma.Utilisateur === 'function') {
       utilisateur = await prisma.Utilisateur.findUnique({
         where: { id: parseInt(req.user.id, 10) },
-        select: { id: true, email: true, nom: true, prenom: true, role: true, telephone: true, adresse: true, poste: true, dateNaissance: true }
+        select: { id: true, email: true, nom: true, prenom: true, role: true, telephone: true, adresse: true, poste: true, dateNaissance: true, entreprises: true }
       });
     } else if (typeof prisma.utilisateur === 'object' && typeof prisma.utilisateur.findUnique === 'function') {
       utilisateur = await prisma.utilisateur.findUnique({
         where: { id: parseInt(req.user.id, 10) },
-        select: { id: true, email: true, nom: true, prenom: true, role: true, telephone: true, adresse: true, poste: true, dateNaissance: true }
+        select: { id: true, email: true, nom: true, prenom: true, role: true, telephone: true, adresse: true, poste: true, dateNaissance: true, entreprises: { select: { entrepriseId: true } } }
       });
     } else {
       return res.status(500).json({ error: 'Erreur interne Prisma' });
@@ -30,7 +30,12 @@ router.get('/me', async (req, res) => {
     if (!utilisateur) {
       return res.status(404).json({ error: 'Utilisateur non trouvé' });
     }
-    res.json(utilisateur);
+    // Ajoute entrepriseId à la racine pour le frontend
+    let entrepriseId = null;
+    if (utilisateur.entreprises && utilisateur.entreprises.length > 0) {
+      entrepriseId = utilisateur.entreprises[0].entrepriseId;
+    }
+    res.json({ ...utilisateur, entrepriseId });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
