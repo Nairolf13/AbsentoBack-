@@ -56,40 +56,60 @@ exports.registerEntreprise = async (req, res) => {
     let { nom, siret, secteur, taille, adresse, telephone, emailContact, responsableNom, responsablePrenom, emailResponsable, motDePasse, dateNaissance } = req.body;
     emailContact = emailContact.trim().toLowerCase();
     emailResponsable = emailResponsable.trim().toLowerCase();
-    const existingEntreprise = await prisma.entreprise.findUnique({
-      where: { emailResponsable }
+
+    // Vérifie si l'entreprise existe déjà (par siret OU emailResponsable)
+    const existingEntreprise = await prisma.entreprise.findFirst({
+      where: {
+        OR: [
+          { siret },
+          { emailResponsable }
+        ]
+      }
     });
     if (existingEntreprise) {
-      return res.status(400).json({ error: "Un responsable avec cet email existe déjà." });
+      return res.status(400).json({ error: "Une entreprise ou un responsable avec cet email/SIRET existe déjà." });
     }
-    const entreprise = await prisma.entreprise.create({
-      data: {
-        nom,
-        siret,
-        secteur,
-        taille,
-        adresse,
-        telephone,
-        emailContact,
-        responsableNom,
-        responsablePrenom,
-        emailResponsable,
-        motDePasse: await bcrypt.hash(motDePasse, 10),
-      },
+
+    // Vérifie si l'utilisateur existe déjà
+    const existingUser = await prisma.utilisateur.findUnique({
+      where: { email: emailResponsable }
     });
-    const responsable = await prisma.utilisateur.create({
-      data: {
-        nom: responsableNom,
-        prenom: responsablePrenom,
-        email: emailResponsable,
-        password: await bcrypt.hash(motDePasse, 10),
-        telephone,
-        dateNaissance: new Date(dateNaissance),
-        adresse,
-        poste: 'RESPONSABLE',
-        role: 'ADMIN',
-      },
-    });
+    if (existingUser) {
+      return res.status(400).json({ error: "Un utilisateur avec cet email existe déjà." });
+    }
+
+    // Transaction atomique
+    const [entreprise, responsable] = await prisma.$transaction([
+      prisma.entreprise.create({
+        data: {
+          nom,
+          siret,
+          secteur,
+          taille,
+          adresse,
+          telephone,
+          emailContact,
+          responsableNom,
+          responsablePrenom,
+          emailResponsable,
+          motDePasse: await bcrypt.hash(motDePasse, 10),
+        },
+      }),
+      prisma.utilisateur.create({
+        data: {
+          nom: responsableNom,
+          prenom: responsablePrenom,
+          email: emailResponsable,
+          password: await bcrypt.hash(motDePasse, 10),
+          telephone,
+          dateNaissance: new Date(dateNaissance),
+          adresse,
+          poste: 'RESPONSABLE',
+          role: 'ADMIN',
+        },
+      })
+    ]);
+
     await prisma.utilisateurEntreprise.create({
       data: {
         utilisateurId: responsable.id,
@@ -99,7 +119,7 @@ exports.registerEntreprise = async (req, res) => {
     res.json({ message: "Entreprise et responsable créés", entreprise, responsable });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Erreur lors de la création de l'entreprise" });
+    res.status(500).json({ error: "Erreur lors de la création de l'entreprise : " + err.message });
   }
 };
 
@@ -108,6 +128,12 @@ exports.registerUser = async (req, res) => {
     const { nom, prenom, email, password, telephone, dateNaissance, adresse, poste, role } = req.body;
     const entrepriseId = req.user.entrepriseId; 
     const normalizedEmail = email.trim().toLowerCase();
+    const existingUser = await prisma.utilisateur.findUnique({
+      where: { email: normalizedEmail }
+    });
+    if (existingUser) {
+      return res.status(400).json({ error: "Un utilisateur avec cet email existe déjà." });
+    }
     const user = await prisma.utilisateur.create({
       data: {
         nom,
