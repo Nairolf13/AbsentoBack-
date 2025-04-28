@@ -134,6 +134,16 @@ exports.declarerAbsenceEtGenererRemplacement = async (req, res) => {
         }
       });
     }
+    // --- EMISSION EVENEMENT TEMPS REEL ---
+    getIo().emit('absence:created', {
+      absence,
+      employeeId,
+      startDate,
+      endDate,
+      type,
+      motif,
+      status: 'En attente'
+    });
     res.status(200).json({ message: "Absence enregistrée." });
   } catch (error) {
     console.error("Erreur dans le traitement de l’absence :", error);
@@ -262,6 +272,18 @@ exports.validerAbsence = async (req, res) => {
       remplacant = await proposerRemplacant(updated);
     }
 
+    // --- Ajout événement temps réel lors de la validation d'une absence ---
+    getIo().emit('absence:updated', {
+      absence: updated,
+      absenceId: updated.id,
+      employeeId: updated.employeeId,
+      startDate: updated.startDate,
+      endDate: updated.endDate,
+      type: updated.type,
+      motif: updated.reason,
+      status: updated.status
+    });
+
     res.json({ message: "Statut mis à jour.", absence: updated, remplacant });
   } catch (err) {
     console.error('Erreur lors de la validation de l\'absence:', err);
@@ -326,4 +348,22 @@ exports.validerRemplacement = async (req, res) => {
 
 exports.refuserRemplacement = async (req, res) => {
   res.status(200).json({ message: "Remplacement refusé (exemple)." });
+};
+
+// Suppression d'une absence
+exports.deleteAbsence = async (req, res) => {
+  try {
+    const { absenceId } = req.params;
+    // Supprimer les entrées de planning liées à cette absence
+    await prisma.planning.deleteMany({ where: { absenceId: Number(absenceId) } });
+    // Supprimer l'absence
+    const absence = await prisma.absence.delete({ where: { id: Number(absenceId) } });
+    // Notifier en temps réel si besoin
+    if (getIo) {
+      getIo().emit('absence:deleted', { absenceId: Number(absenceId) });
+    }
+    res.status(200).json({ success: true, absence });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 };

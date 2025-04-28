@@ -57,4 +57,6 @@ router.patch('/justificatif/:absenceId', verifyToken, absenceController.ajouterJ
 router.patch('/remplacement/:remplacementId/valider', verifyToken, absenceController.validerRemplacement);
 router.delete('/remplacement/:remplacementId/refuser', verifyToken, absenceController.refuserRemplacement);
 
+router.delete('/:absenceId', verifyToken, absenceController.deleteAbsence);
+
 module.exports = router;
