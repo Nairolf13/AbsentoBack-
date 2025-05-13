@@ -1,4 +1,3 @@
-// src/utils/socket.js
 const { Server } = require('socket.io');
 const socketAuthMiddleware = require('../middlewares/socketAuth.middleware');
 let ioInstance;
@@ -6,8 +5,15 @@ let ioInstance;
 function initSocket(server) {
   ioInstance = new Server(server, {
     cors: {
-      origin: '*',
-      methods: ['GET', 'POST']
+      origin: [
+        'http://localhost:5173',
+        'http://192.168.1.22:5173',
+        'http://127.0.0.1:5173',
+        'http://51.91.208.111:5173',
+        'http://51.91.208.111:5888',
+      ],
+      methods: ['GET', 'POST'],
+      credentials: true
     }
   });
   ioInstance.use(socketAuthMiddleware);

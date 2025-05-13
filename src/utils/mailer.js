@@ -26,7 +26,7 @@ async function sendEmail(to, subject, htmlContent) {
 }
 
 async function sendInvitationEmail(user, token) {
-  const link = `${process.env.URL_PROD}creer-mot-de-passe?token=${token}`;
+  const link = `${process.env.LOCAL_URL}creer-mot-de-passe?token=${token}`;
   const subject = "Création de votre compte Absento";
   const htmlContent = `
     <p>Bonjour ${user.prenom} ${user.nom},</p>

@@ -134,7 +134,6 @@ exports.declarerAbsenceEtGenererRemplacement = async (req, res) => {
         }
       });
     }
-    // --- EMISSION EVENEMENT TEMPS REEL ---
     getIo().emit('absence:created', {
       absence,
       employeeId,
@@ -222,7 +221,6 @@ exports.getAllAbsences = async (req, res) => {
     if (!entrepriseId) {
       return res.status(400).json({ error: "Entreprise non trouvée pour l'utilisateur connecté." });
     }
-    // Récupère les IDs des employés de l'entreprise
     const liens = await prisma.utilisateurEntreprise.findMany({
       where: { entrepriseId }
     });
@@ -272,7 +270,6 @@ exports.validerAbsence = async (req, res) => {
       remplacant = await proposerRemplacant(updated);
     }
 
-    // --- Ajout événement temps réel lors de la validation d'une absence ---
     getIo().emit('absence:updated', {
       absence: updated,
       absenceId: updated.id,
@@ -350,15 +347,11 @@ exports.refuserRemplacement = async (req, res) => {
   res.status(200).json({ message: "Remplacement refusé (exemple)." });
 };
 
-// Suppression d'une absence
 exports.deleteAbsence = async (req, res) => {
   try {
     const { absenceId } = req.params;
-    // Supprimer les entrées de planning liées à cette absence
     await prisma.planning.deleteMany({ where: { absenceId: Number(absenceId) } });
-    // Supprimer l'absence
     const absence = await prisma.absence.delete({ where: { id: Number(absenceId) } });
-    // Notifier en temps réel si besoin
     if (getIo) {
       getIo().emit('absence:deleted', { absenceId: Number(absenceId) });
     }

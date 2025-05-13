@@ -64,31 +64,25 @@ async function validerRemplacement(req, res) {
       } catch (e) { /* ignore ws error */ }
     }
 
-    // Notifier tous les RH/Admin/Managers de l'entreprise de l'absent
     if (absence && absence.employee && absence.employee.id) {
-      // On récupère l'entreprise de l'absent
       let entrepriseId = null;
-      // On tente de récupérer le lien utilisateur-entreprise
       const lien = await prisma.utilisateurEntreprise.findFirst({ where: { utilisateurId: absence.employee.id } });
       if (lien && lien.entrepriseId) {
         entrepriseId = lien.entrepriseId;
       }
       if (entrepriseId) {
-        // On récupère tous les RH/Admin/Managers de cette entreprise
         const responsables = await prisma.utilisateur.findMany({
           where: {
             role: { in: ['ADMIN', 'RH', 'MANAGER'] },
             entreprises: { some: { entrepriseId: entrepriseId } },
-            id: { notIn: [absence.employee.id, remplacant.id] } // On exclut l'absent et le remplaçant
+            id: { notIn: [absence.employee.id, remplacant.id] } 
           }
         });
         const notifMessage = `Remplacement validé : ${remplacant.prenom} ${remplacant.nom} remplacera ${absence.employee.prenom} ${absence.employee.nom} du ${absence.startDate.toLocaleDateString()} au ${absence.endDate.toLocaleDateString()}`;
         for (const responsable of responsables) {
-          // WebSocket
           try {
             require('../services/websocket').sendNotificationToUser(responsable.id.toString(), notifMessage);
           } catch (e) { /* ignore ws error */ }
-          // Notification en base
           await prisma.notification.create({
             data: {
               userId: responsable.id,

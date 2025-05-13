@@ -35,10 +35,13 @@ exports.login = async (req, res) => {
   const lien = await prisma.utilisateurEntreprise.findFirst({ where: { utilisateurId: user.id } });
   const entrepriseId = lien ? lien.entrepriseId : null;
   const token = jwt.sign({ id: user.id, role: user.role, entrepriseId }, process.env.JWT_SECRET, { expiresIn: '1h' });
+  
+  const isProduction = process.env.NODE_ENV === 'production';
+  
   res.cookie('token', token, {
     httpOnly: true,
-    secure: false, 
-    sameSite: 'lax', 
+    secure: isProduction, 
+    sameSite: isProduction ? 'none' : 'lax', 
     domain: undefined, 
     path: '/',
     maxAge: 3600000 
@@ -57,7 +60,6 @@ exports.registerEntreprise = async (req, res) => {
     emailContact = emailContact.trim().toLowerCase();
     emailResponsable = emailResponsable.trim().toLowerCase();
 
-    // Vérifie si l'entreprise existe déjà (par siret OU emailResponsable)
     const existingEntreprise = await prisma.entreprise.findFirst({
       where: {
         OR: [
@@ -70,7 +72,6 @@ exports.registerEntreprise = async (req, res) => {
       return res.status(400).json({ error: "Une entreprise ou un responsable avec cet email/SIRET existe déjà." });
     }
 
-    // Vérifie si l'utilisateur existe déjà
     const existingUser = await prisma.utilisateur.findUnique({
       where: { email: emailResponsable }
     });
@@ -78,7 +79,6 @@ exports.registerEntreprise = async (req, res) => {
       return res.status(400).json({ error: "Un utilisateur avec cet email existe déjà." });
     }
 
-    // Transaction atomique
     const [entreprise, responsable] = await prisma.$transaction([
       prisma.entreprise.create({
         data: {

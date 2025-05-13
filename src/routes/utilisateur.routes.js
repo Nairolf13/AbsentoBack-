@@ -6,9 +6,9 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 router.post('/create', verifyToken, utilisateurController.createUtilisateur);
-router.put('/:id', utilisateurController.updateUtilisateur);
-router.delete('/:id', utilisateurController.deleteUtilisateur);
-router.get('/me', async (req, res) => {
+router.put('/:id', verifyToken, utilisateurController.updateUtilisateur);
+router.delete('/:id', verifyToken, utilisateurController.deleteUtilisateur);
+router.get('/me', verifyToken, async (req, res) => {
   try {
     if (!req.user || typeof req.user.id === 'undefined') {
       return res.status(401).json({ error: 'Non authentifié' });
@@ -30,7 +30,6 @@ router.get('/me', async (req, res) => {
     if (!utilisateur) {
       return res.status(404).json({ error: 'Utilisateur non trouvé' });
     }
-    // Ajoute entrepriseId à la racine pour le frontend
     let entrepriseId = null;
     if (utilisateur.entreprises && utilisateur.entreprises.length > 0) {
       entrepriseId = utilisateur.entreprises[0].entrepriseId;
@@ -41,8 +40,8 @@ router.get('/me', async (req, res) => {
   }
 });
 
-router.get('/:id', utilisateurController.getUtilisateur);
+router.get('/:id', verifyToken, utilisateurController.getUtilisateur);
 router.get('/entreprise/employes', verifyToken, utilisateurController.getUsersByEntreprise);
-router.post('/import-csv', utilisateurController.importCSV);
+router.post('/import-csv', verifyToken, utilisateurController.importCSV);
 
 module.exports = router;

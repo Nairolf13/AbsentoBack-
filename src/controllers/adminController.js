@@ -58,25 +58,19 @@ exports.getFullPlanning = async (req, res) => {
 exports.getUserNotifications = async (req, res) => {
   const { userId } = req.params;
   try {
-    // Récupérer l'entreprise de l'utilisateur cible
     const lien = await prisma.utilisateurEntreprise.findFirst({ where: { utilisateurId: Number(userId) } });
     const entrepriseId = lien ? lien.entrepriseId : null;
     if (!entrepriseId) {
       return res.status(400).json({ error: "Entreprise non trouvée pour cet utilisateur." });
     }
-    // Récupérer uniquement les notifications dont l'expéditeur ou la cible appartient à la même entreprise
-    // (On suppose que les notifications sont liées à des actions dans l'entreprise)
     const usersEntreprise = await prisma.utilisateurEntreprise.findMany({
       where: { entrepriseId },
       select: { utilisateurId: true }
     });
     const idsEntreprise = usersEntreprise.map(u => u.utilisateurId);
-    // On ne retourne que les notifications du user qui proviennent de cette entreprise
     const notifications = await prisma.notification.findMany({
       where: {
         userId: Number(userId),
-        // Si tu veux filtrer aussi selon l'auteur, il faut ajouter un champ senderId dans la notif
-        // senderId: { in: idsEntreprise }
       }
     });
     res.json(notifications);
